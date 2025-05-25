@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Theme Variables Mapper</title>
+    <style>
+      /* Inline CSS - Required for Figma plugins */
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 84% 4.9%;
+        --primary: 222.2 47.4% 11.2%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96%;
+        --secondary-foreground: 222.2 47.4% 11.2%;
+        --muted: 210 40% 96%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96%;
+        --border: 214.3 31.8% 91.4%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --radius: 8px;
+        --success: 142.1 76.2% 36.3%;
+        --warning: 47.9 95.8% 53.1%;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        font-size: 13px;
+        line-height: 1.5;
+        color: hsl(var(--foreground));
+        background-color: hsl(var(--background));
+        padding: 20px;
+      }
+
+      #app {
+        max-width: 100%;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .section {
+        opacity: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      /* Header */
+      .header {
+        text-align: center;
+        padding: 16px 0;
+        background: hsl(var(--background));
+        border-radius: var(--radius);
+        margin-bottom: 8px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: hsl(var(--foreground));
+        margin-bottom: 4px;
+        letter-spacing: -0.025em;
+        line-height: 1.2;
+      }
+
+      .subtitle {
+        color: hsl(var(--muted-foreground));
+        font-size: 14px;
+        font-weight: 500;
+        max-width: 320px;
+        margin: 0 auto;
+        line-height: 1.4;
+      }
+
+      /* Upload area */
+      .upload-area {
+        border: 2px dashed hsl(var(--border));
+        border-radius: calc(var(--radius) + 4px);
+        padding: 48px 24px;
+        text-align: center;
+        background: hsl(var(--background));
+        transition: all 0.2s ease;
+        cursor: pointer;
+      }
+
+      .upload-area:hover {
+        border-color: hsl(var(--primary));
+        background: hsl(var(--accent));
+      }
+
+      .upload-content .upload-icon {
+        font-size: 56px;
+        margin-bottom: 16px;
+        opacity: 0.7;
+      }
+
+      .upload-content h3 {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: hsl(var(--foreground));
+        line-height: 1.3;
+      }
+
+      .upload-content p {
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 24px;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .supported-formats {
+        text-align: center;
+        margin-top: 16px;
+      }
+
+      .supported-formats small {
+        color: hsl(var(--muted-foreground));
+        font-size: 12px;
+      }
+
+      /* Loading */
+      .loading {
+        text-align: center;
+        padding: 60px 24px;
+        background: hsl(var(--card));
+        border-radius: var(--radius);
+        border: 1px solid hsl(var(--border));
+      }
+
+      .loader {
+        width: 28px;
+        height: 28px;
+        border: 3px solid hsl(var(--muted));
+        border-top: 3px solid hsl(var(--primary));
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto 20px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .loading p {
+        color: hsl(var(--muted-foreground));
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.4;
+      }
+
+      /* Library Info */
+      .library-info {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: var(--radius);
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+
+      .library-info h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: hsl(var(--foreground));
+      }
+
+      .library-item {
+        margin-bottom: 8px;
+        padding: 8px;
+        background: hsl(var(--muted) / 0.3);
+        border-radius: calc(var(--radius) - 2px);
+      }
+
+      .library-name {
+        font-weight: 600;
+        font-size: 13px;
+        color: hsl(var(--foreground));
+        margin-bottom: 4px;
+      }
+
+      .collection-item {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        margin-left: 12px;
+        font-family: "SF Mono", "Menlo", "Monaco", "Courier New", monospace;
+      }
+      .collection-selector {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: var(--radius);
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+
+      .collection-selector h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: hsl(var(--foreground));
+      }
+
+      .collection-option {
+        margin-bottom: 12px;
+      }
+
+      .collection-option label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: hsl(var(--foreground));
+        cursor: pointer;
+      }
+
+      .collection-option input[type="radio"] {
+        margin: 0;
+      }
+
+      .collection-option select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid hsl(var(--border));
+        border-radius: var(--radius);
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-size: 13px;
+        margin-top: 8px;
+      }
+
+      .collection-option select:disabled {
+        opacity: 0.5;
+        pointer-events: none;
+      }
+      .library-selector {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: var(--radius);
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+
+      .library-selector h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: hsl(var(--foreground));
+      }
+
+      .library-selector select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid hsl(var(--border));
+        border-radius: var(--radius);
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-size: 13px;
+      }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        border-radius: var(--radius);
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        border: 1px solid transparent;
+        padding: 0 20px;
+        height: 44px;
+        gap: 8px;
+      }
+
+      .btn:disabled {
+        pointer-events: none;
+        opacity: 0.5;
+      }
+
+      .btn-primary {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        border: 1px solid hsl(var(--primary));
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        background: hsl(var(--primary) / 0.9);
+      }
+
+      .btn-secondary {
+        background: hsl(var(--secondary));
+        color: hsl(var(--secondary-foreground));
+        border: 1px solid hsl(var(--border));
+      }
+
+      .btn-secondary:hover:not(:disabled) {
+        background: hsl(var(--muted));
+      }
+
+      /* Cards */
+      .summary-card,
+      .result-group,
+      .error-card {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: var(--radius);
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .summary-card {
+        padding: 24px 20px;
+        text-align: center;
+      }
+
+      .summary-card.success {
+        border-color: hsl(var(--success) / 0.3);
+        background: hsl(var(--success) / 0.05);
+      }
+
+      .summary-card.warning {
+        border-color: hsl(var(--warning) / 0.3);
+        background: hsl(var(--warning) / 0.05);
+      }
+
+      .summary-card.error {
+        border-color: hsl(var(--destructive) / 0.3);
+        background: hsl(var(--destructive) / 0.05);
+      }
+
+      .summary-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .stat-number {
+        font-size: 32px;
+        font-weight: 800;
+        color: hsl(var(--primary));
+        line-height: 1;
+      }
+
+      .summary-card.success .stat-number {
+        color: hsl(var(--success));
+      }
+
+      .summary-card.warning .stat-number {
+        color: hsl(var(--warning));
+      }
+
+      .summary-card.error .stat-number {
+        color: hsl(var(--destructive));
+      }
+
+      .stat-label {
+        color: hsl(var(--muted-foreground));
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      /* Result groups */
+      .result-group {
+        margin-bottom: 8px;
+        overflow: visible;
+        border: 1px solid hsl(var(--border));
+        border-radius: var(--radius);
+      }
+
+      .result-title {
+        padding: 12px 16px;
+        background: hsl(var(--muted));
+        border-bottom: 1px solid hsl(var(--border));
+        font-size: 13px;
+        font-weight: 600;
+        margin: 0;
+        color: hsl(var(--foreground));
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .result-title:hover {
+        background: hsl(var(--muted) / 0.8);
+      }
+
+      .result-count {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        background: hsl(var(--background));
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 500;
+      }
+
+      .variable-list {
+        padding: 0;
+        max-height: none;
+        overflow-y: visible;
+        transition: all 0.2s ease;
+      }
+
+      .variable-item {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid hsl(var(--border));
+      }
+
+      .variable-item:last-child {
+        border-bottom: none;
+      }
+
+      .variable-item:hover {
+        background: hsl(var(--muted) / 0.3);
+      }
+
+      .variable-name {
+        font-weight: 700;
+        color: hsl(var(--foreground));
+        font-size: 13px;
+        font-family: "SF Mono", "Menlo", "Monaco", "Courier New", monospace;
+        line-height: 1.3;
+        word-break: break-all;
+      }
+
+      .variable-references {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        background: hsl(var(--muted) / 0.3);
+        padding: 12px;
+        border-radius: var(--radius);
+        border: 1px solid hsl(var(--border));
+      }
+
+      .reference-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 11px;
+        font-family: "SF Mono", "Menlo", "Monaco", "Courier New", monospace;
+        word-break: break-all;
+      }
+
+      .reference-label {
+        color: hsl(var(--muted-foreground));
+        font-weight: 500;
+      }
+
+      .reference-value {
+        color: hsl(var(--foreground));
+        font-weight: 600;
+      }
+
+      .error-text {
+        color: hsl(var(--destructive));
+        font-weight: 500;
+        font-size: 11px;
+        line-height: 1.4;
+        word-break: break-word;
+      }
+
+      /* Actions */
+      .actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        padding-top: 16px;
+        border-top: 1px solid hsl(var(--border));
+      }
+
+      /* Error card */
+      .error-card {
+        padding: 32px 24px;
+        text-align: center;
+        border-color: hsl(var(--destructive) / 0.3);
+        background: hsl(var(--destructive) / 0.05);
+      }
+
+      .error-card h3 {
+        color: hsl(var(--destructive));
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        line-height: 1.3;
+      }
+
+      .error-card p {
+        color: hsl(var(--destructive) / 0.8);
+        margin-bottom: 24px;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      /* Responsive */
+      @media (max-width: 480px) {
+        body {
+          padding: 16px;
+        }
+
+        .summary-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .actions {
+          flex-direction: column;
+        }
+
+        .btn {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div class="header">
+        <h1>Theme Variables Mapper</h1>
+        <p class="subtitle">
+          Map CSS @theme variables to Figma variables <br />
+          with shared library references
+        </p>
+      </div>
+
+      <div id="upload-section" class="section">
+        <div class="library-info" id="library-info">
+          <h3>📚 Available Libraries</h3>
+          <div id="library-list">Loading libraries...</div>
+        </div>
+
+        <div class="upload-area" id="upload-area">
+          <div class="upload-content">
+            <div class="upload-icon">📁</div>
+            <h3>Upload CSS File</h3>
+            <p>Drag & drop your CSS file with @theme variables</p>
+            <input type="file" id="file-input" accept=".css" hidden />
+            <button id="browse-btn" class="btn btn-primary">Choose File</button>
+          </div>
+        </div>
+        <div class="supported-formats">
+          <small>Supported: .css files with @theme and light/dark modes</small>
+        </div>
+      </div>
+
+      <div id="loading-section" class="section hidden">
+        <div class="loading">
+          <div class="loader"></div>
+          <p id="loading-text">Parsing CSS file...</p>
+        </div>
+      </div>
+
+      <div id="preview-section" class="section hidden">
+        <h2>📋 Configure & Preview</h2>
+
+        <div class="library-selector">
+          <h3>🎯 Select ONE Variable Collection</h3>
+          <p
+            style="
+              font-size: 12px;
+              color: hsl(var(--muted-foreground));
+              margin-bottom: 12px;
+            "
+          >
+            Choose which variable collection contains the base colors you want
+            to reference.
+          </p>
+          <select id="library-select">
+            <option value="">Choose one collection...</option>
+          </select>
+        </div>
+
+        <div class="collection-selector">
+          <h3>📁 Variable Collection</h3>
+          <div class="collection-option">
+            <label>
+              <input
+                type="radio"
+                name="collection-choice"
+                value="new"
+                checked
+              />
+              Create new collection
+            </label>
+          </div>
+          <div class="collection-option">
+            <label>
+              <input type="radio" name="collection-choice" value="existing" />
+              Use existing collection
+            </label>
+            <select id="existing-collection-select" disabled>
+              <option value="">Choose a collection...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-stat">
+            <span class="stat-number" id="preview-total">0</span>
+            <span class="stat-label">theme variables found</span>
+          </div>
+        </div>
+
+        <div id="preview-variables" class="result-group">
+          <h3 class="result-title">🎨 Variables to Create</h3>
+          <div id="preview-variables-list" class="variable-list"></div>
+        </div>
+
+        <div class="actions">
+          <button id="cancel-btn" class="btn btn-secondary">Cancel</button>
+          <button id="apply-btn" class="btn btn-primary" disabled>
+            Apply Changes
+          </button>
+        </div>
+      </div>
+
+      <div id="results-section" class="section hidden">
+        <h2>🎉 Results</h2>
+
+        <div class="summary-grid">
+          <div class="summary-card success">
+            <div class="summary-stat">
+              <span class="stat-number" id="created-count">0</span>
+              <span class="stat-label">Created</span>
+            </div>
+          </div>
+          <div class="summary-card warning">
+            <div class="summary-stat">
+              <span class="stat-number" id="updated-count">0</span>
+              <span class="stat-label">Updated</span>
+            </div>
+          </div>
+          <div class="summary-card error">
+            <div class="summary-stat">
+              <span class="stat-number" id="failed-count">0</span>
+              <span class="stat-label">Failed</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="results-created" class="result-group">
+          <h3 class="result-title">✅ Created Variables</h3>
+          <div id="results-created-list" class="variable-list"></div>
+        </div>
+
+        <div id="results-updated" class="result-group">
+          <h3 class="result-title">⚠️ Updated Variables</h3>
+          <div id="results-updated-list" class="variable-list"></div>
+        </div>
+
+        <div id="results-failed" class="result-group">
+          <h3 class="result-title">❌ Failed Variables</h3>
+          <div id="results-failed-list" class="variable-list"></div>
+        </div>
+
+        <div class="actions">
+          <button id="upload-new-btn" class="btn btn-secondary">
+            Upload New File
+          </button>
+          <button id="close-btn" class="btn btn-primary">Close</button>
+        </div>
+      </div>
+
+      <div id="error-section" class="section hidden">
+        <div class="error-card">
+          <h3>⚠️ Error</h3>
+          <p id="error-message">Something went wrong.</p>
+          <button id="retry-btn" class="btn btn-primary">
+            Upload New File
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      console.log("Plugin UI loaded");
+
+      let isProcessing = false;
+      let currentResults = null;
+      let availableLibraries = [];
+      let localCollections = [];
+
+      document.addEventListener("DOMContentLoaded", function () {
+        const elements = {
+          fileInput: document.getElementById("file-input"),
+          browseBtn: document.getElementById("browse-btn"),
+          uploadArea: document.getElementById("upload-area"),
+          librarySelect: document.getElementById("library-select"),
+          collectionRadios: document.querySelectorAll(
+            'input[name="collection-choice"]'
+          ),
+          existingCollectionSelect: document.getElementById(
+            "existing-collection-select"
+          ),
+          uploadNewBtn: document.getElementById("upload-new-btn"),
+          closeBtn: document.getElementById("close-btn"),
+          retryBtn: document.getElementById("retry-btn"),
+          cancelBtn: document.getElementById("cancel-btn"),
+          applyBtn: document.getElementById("apply-btn"),
+          loadingText: document.getElementById("loading-text"),
+        };
+
+        // File input listener
+        elements.fileInput?.addEventListener("change", function (event) {
+          if (isProcessing) return;
+          const file = event.target.files[0];
+          if (file) processFile(file);
+        });
+
+        // Button listeners
+        elements.browseBtn?.addEventListener("click", function (e) {
+          e.stopPropagation();
+          if (!isProcessing) elements.fileInput?.click();
+        });
+
+        elements.uploadArea?.addEventListener("click", function (e) {
+          if (
+            e.target === elements.browseBtn ||
+            elements.browseBtn?.contains(e.target)
+          )
+            return;
+          if (!isProcessing) elements.fileInput?.click();
+        });
+
+        elements.librarySelect?.addEventListener("change", updateApplyButton);
+
+        // Collection choice listeners
+        elements.collectionRadios?.forEach((radio) => {
+          radio.addEventListener("change", function () {
+            const existingSelect = elements.existingCollectionSelect;
+            if (this.value === "existing") {
+              existingSelect.disabled = false;
+            } else {
+              existingSelect.disabled = true;
+              existingSelect.value = "";
+            }
+            updateApplyButton();
+          });
+        });
+
+        elements.existingCollectionSelect?.addEventListener(
+          "change",
+          updateApplyButton
+        );
+
+        elements.cancelBtn?.addEventListener("click", resetToUpload);
+        elements.uploadNewBtn?.addEventListener("click", resetToUpload);
+        elements.retryBtn?.addEventListener("click", resetToUpload);
+
+        elements.applyBtn?.addEventListener("click", function () {
+          const selectedLibrary = elements.librarySelect.value;
+          const collectionChoice = document.querySelector(
+            'input[name="collection-choice"]:checked'
+          )?.value;
+          const existingCollectionId = elements.existingCollectionSelect.value;
+
+          if (
+            currentResults?.variables &&
+            selectedLibrary &&
+            collectionChoice
+          ) {
+            if (collectionChoice === "existing" && !existingCollectionId) {
+              alert(
+                "Please select an existing collection or choose to create a new one."
+              );
+              return;
+            }
+            createVariables(
+              currentResults.variables,
+              selectedLibrary,
+              collectionChoice,
+              existingCollectionId
+            );
+          }
+        });
+
+        elements.closeBtn?.addEventListener("click", function () {
+          parent.postMessage({ pluginMessage: { type: "close-plugin" } }, "*");
+        });
+
+        // Message handler
+        window.onmessage = function (event) {
+          const {
+            type,
+            success,
+            results,
+            message,
+            libraries,
+            localCollections: collections,
+          } = event.data.pluginMessage;
+
+          switch (type) {
+            case "collections-loaded":
+              if (success) {
+                availableLibraries = libraries;
+                localCollections = collections;
+                displayLibraryInfo(libraries);
+                populateLibrarySelect(libraries);
+                populateCollectionSelect(collections);
+              } else {
+                displayError(message || "Failed to load collections");
+              }
+              break;
+
+            case "parsing-complete":
+              isProcessing = false;
+              if (success) {
+                currentResults = results;
+                displayPreview(currentResults);
+                showSection("preview-section");
+              } else {
+                displayError(message);
+                showSection("error-section");
+              }
+              break;
+
+            case "creation-complete":
+              isProcessing = false;
+              if (success) {
+                displayCreationResults(results);
+                showSection("results-section");
+              } else {
+                displayError(message);
+                showSection("error-section");
+              }
+              break;
+          }
+        };
+
+        function updateApplyButton() {
+          const librarySelected = elements.librarySelect.value;
+          const collectionChoice = document.querySelector(
+            'input[name="collection-choice"]:checked'
+          )?.value;
+          const existingCollectionSelected =
+            elements.existingCollectionSelect.value;
+
+          let canApply = librarySelected && collectionChoice && currentResults;
+
+          if (collectionChoice === "existing") {
+            canApply = canApply && existingCollectionSelected;
+          }
+
+          elements.applyBtn.disabled = !canApply;
+        }
+      });
+
+      function processFile(file) {
+        if (isProcessing) return;
+        isProcessing = true;
+
+        if (!file.name.endsWith(".css")) {
+          displayError("Please upload a CSS file (.css extension required).");
+          showSection("error-section");
+          isProcessing = false;
+          return;
+        }
+
+        showSection("loading-section");
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          parent.postMessage(
+            {
+              pluginMessage: { type: "parse-css", cssContent: e.target.result },
+            },
+            "*"
+          );
+        };
+
+        reader.onerror = function () {
+          console.error("File read error");
+          displayError("Error reading file. Please try again.");
+          showSection("error-section");
+          isProcessing = false;
+        };
+
+        reader.readAsText(file);
+      }
+
+      function loadCollections() {
+        document.getElementById("loading-text").textContent =
+          "Loading collections...";
+        parent.postMessage({ pluginMessage: { type: "get-collections" } }, "*");
+      }
+
+      function displayLibraryInfo(libraries) {
+        const libraryList = document.getElementById("library-list");
+
+        if (!libraries || libraries.length === 0) {
+          libraryList.innerHTML =
+            '<div style="color: hsl(var(--muted-foreground)); font-style: italic;">No libraries with variable collections found</div>';
+          return;
+        }
+
+        libraryList.innerHTML = libraries
+          .map(
+            (library) => `
+          <div class="library-item">
+            <div class="library-name">📚 ${library.libraryName} (${
+              library.totalVariables
+            } total variables)</div>
+            ${library.collections
+              .map((collection) => {
+                const errorText = collection.error
+                  ? ` ⚠️ Error: ${collection.error}`
+                  : "";
+                return `<div class="collection-item">📁 ${collection.name} (${collection.variableCount} variables)${errorText}</div>`;
+              })
+              .join("")}
+          </div>
+        `
+          )
+          .join("");
+      }
+
+      function populateLibrarySelect(libraries) {
+        const select = document.getElementById("library-select");
+
+        // Clear existing options except the first one
+        while (select.children.length > 1) {
+          select.removeChild(select.lastChild);
+        }
+
+        libraries.forEach((library) => {
+          // Add option for each collection in the library
+          library.collections.forEach((collection) => {
+            const option = document.createElement("option");
+            option.value = collection.id;
+            option.textContent = `${library.libraryName} → ${collection.name} (${collection.variableCount} variables)`;
+            select.appendChild(option);
+          });
+        });
+
+        console.log(`📚 Populated library collections in dropdown`);
+      }
+
+      function populateCollectionSelect(collections) {
+        const select = document.getElementById("existing-collection-select");
+
+        // Clear existing options except the first one
+        while (select.children.length > 1) {
+          select.removeChild(select.lastChild);
+        }
+
+        collections.forEach((collection) => {
+          const option = document.createElement("option");
+          option.value = collection.id;
+          option.textContent = `${collection.name} (${collection.modeCount} modes)`;
+          select.appendChild(option);
+        });
+      }
+
+      function createVariables(
+        variables,
+        selectedLibraryId,
+        collectionChoice,
+        existingCollectionId
+      ) {
+        if (isProcessing) return;
+        isProcessing = true;
+
+        document.getElementById("loading-text").textContent =
+          "Creating variables...";
+        showSection("loading-section");
+
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "create-variables",
+              variablesToCreate: variables,
+              selectedLibraryId: selectedLibraryId,
+              collectionChoice: collectionChoice,
+              existingCollectionId: existingCollectionId,
+            },
+          },
+          "*"
+        );
+      }
+
+      function showSection(sectionId) {
+        const sections = [
+          "upload-section",
+          "loading-section",
+          "preview-section",
+          "results-section",
+          "error-section",
+        ];
+        sections.forEach((id) => {
+          const section = document.getElementById(id);
+          section?.classList.add("hidden");
+        });
+        document.getElementById(sectionId)?.classList.remove("hidden");
+      }
+
+      function resetToUpload() {
+        isProcessing = false;
+        currentResults = null;
+        availableLibraries = [];
+        localCollections = [];
+        document.getElementById("loading-text").textContent =
+          "Parsing CSS file...";
+
+        // Reset library select
+        const librarySelect = document.getElementById("library-select");
+        librarySelect.innerHTML =
+          '<option value="">Choose a library...</option>';
+
+        // Reset collection select
+        const collectionSelect = document.getElementById(
+          "existing-collection-select"
+        );
+        collectionSelect.innerHTML =
+          '<option value="">Choose a collection...</option>';
+        collectionSelect.disabled = true;
+
+        // Reset radio buttons
+        document.querySelector(
+          'input[name="collection-choice"][value="new"]'
+        ).checked = true;
+
+        showSection("upload-section");
+        const fileInput = document.getElementById("file-input");
+        if (fileInput) fileInput.value = "";
+      }
+
+      function displayPreview(results) {
+        document.getElementById("preview-total").textContent =
+          results.totalFound;
+
+        populateVariableList(
+          "preview-variables",
+          "preview-variables-list",
+          results.variables,
+          "preview"
+        );
+
+        // Update apply button state
+        const updateButton = () => {
+          const librarySelect = document.getElementById("library-select");
+          const collectionChoice = document.querySelector(
+            'input[name="collection-choice"]:checked'
+          )?.value;
+          const existingCollectionSelect = document.getElementById(
+            "existing-collection-select"
+          );
+
+          let canApply = librarySelect.value && collectionChoice;
+          if (collectionChoice === "existing") {
+            canApply = canApply && existingCollectionSelect.value;
+          }
+
+          document.getElementById("apply-btn").disabled = !canApply;
+        };
+
+        updateButton();
+      }
+
+      function displayCreationResults(results) {
+        document.getElementById("created-count").textContent =
+          results.summary.created;
+        document.getElementById("updated-count").textContent =
+          results.summary.updated;
+        document.getElementById("failed-count").textContent =
+          results.summary.failed;
+
+        populateVariableList(
+          "results-created",
+          "results-created-list",
+          results.created,
+          "created"
+        );
+        populateVariableList(
+          "results-updated",
+          "results-updated-list",
+          results.updated,
+          "updated"
+        );
+        populateVariableList(
+          "results-failed",
+          "results-failed-list",
+          results.failed,
+          "failed"
+        );
+      }
+
+      function populateVariableList(sectionId, listId, items, type) {
+        const section = document.getElementById(sectionId);
+        const list = document.getElementById(listId);
+
+        if (items && items.length > 0) {
+          list.innerHTML = "";
+
+          items.forEach((item) => {
+            list.appendChild(createVariableItem(item, type));
+          });
+
+          // Update title with count
+          const title = section.querySelector(".result-title");
+          const existingCount = title.querySelector(".result-count");
+          if (existingCount) {
+            existingCount.remove();
+          }
+          const countSpan = document.createElement("span");
+          countSpan.className = "result-count";
+          countSpan.textContent = `${items.length} ${
+            type === "preview"
+              ? "variables"
+              : type === "created"
+              ? "created"
+              : type === "updated"
+              ? "updated"
+              : "failed"
+          }`;
+          title.appendChild(countSpan);
+
+          section?.classList.remove("hidden");
+        } else {
+          section?.classList.add("hidden");
+        }
+      }
+
+      function createVariableItem(item, type) {
+        const div = document.createElement("div");
+        div.className = "variable-item";
+
+        // Variable name
+        const nameDiv = document.createElement("div");
+        nameDiv.className = "variable-name";
+        nameDiv.textContent = item.variableName;
+
+        // Variable references
+        const referencesDiv = document.createElement("div");
+        referencesDiv.className = "variable-references";
+
+        // Light mode reference
+        const lightRef = document.createElement("div");
+        lightRef.className = "reference-item";
+        lightRef.innerHTML = `
+          <span class="reference-label">Light:</span>
+          <span class="reference-value">${item.lightReference}</span>
+        `;
+
+        // Dark mode reference
+        const darkRef = document.createElement("div");
+        darkRef.className = "reference-item";
+        darkRef.innerHTML = `
+          <span class="reference-label">Dark:</span>
+          <span class="reference-value">${item.darkReference}</span>
+        `;
+
+        referencesDiv.appendChild(lightRef);
+        referencesDiv.appendChild(darkRef);
+
+        // For results, show which library variables were used
+        if (type === "created" || type === "updated") {
+          if (item.lightLibraryVar) {
+            lightRef.innerHTML = `
+              <span class="reference-label">Light:</span>
+              <span class="reference-value">${item.lightLibraryVar}</span>
+            `;
+          }
+          if (item.darkLibraryVar) {
+            darkRef.innerHTML = `
+              <span class="reference-label">Dark:</span>
+              <span class="reference-value">${item.darkLibraryVar}</span>
+            `;
+          }
+        }
+
+        // For failed items, show error
+        if (type === "failed" && item.error) {
+          const errorDiv = document.createElement("div");
+          errorDiv.className = "error-text";
+          errorDiv.textContent = `Error: ${item.error}`;
+          referencesDiv.appendChild(errorDiv);
+        }
+
+        div.appendChild(nameDiv);
+        div.appendChild(referencesDiv);
+
+        return div;
+      }
+
+      function displayError(message) {
+        console.error("Plugin error:", message);
+        document.getElementById("error-message").textContent = message;
+      }
+    </script>
+  </body>
+</html>
