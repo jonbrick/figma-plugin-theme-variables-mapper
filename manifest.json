@@ -1,6 +1,6 @@
 {
-  "name": "Theme Variables Mapper",
-  "id": "theme-variables-mapper",
+  "name": "Variables Mapper",
+  "id": "variables-mapper",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",

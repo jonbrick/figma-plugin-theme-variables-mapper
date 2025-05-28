@@ -1,126 +1,297 @@
-# Theme Variables Mapper
-
-A Figma plugin that maps CSS @theme variables to Figma variables using **local collection references**.
+# Theme Variables Mapper Plugin Documentation
 
 ## Overview
 
-This plugin allows you to:
+The Theme Variables Mapper is a Figma plugin that automates the creation of theme variables by parsing CSS files and mapping them to existing design tokens in your Figma libraries or local collections. It supports light/dark mode theming and maintains proper variable relationships through Figma's alias system.
 
-1. Parse CSS files containing @theme variables with light/dark mode definitions
-2. Map those variables to existing variables in either a **local collection** or an **external library collection**
-3. Create new variables in a target collection that reference the source variables
+## Features
 
-## Key Features
+- **CSS @theme Parsing**: Extracts theme variables from CSS files with light/dark mode definitions
+- **Flexible Source Collections**: Reference variables from either local collections or external shared libraries
+- **Automatic Mode Management**: Creates and configures Light/Dark modes in target collections
+- **Opacity Support**: Handles CSS opacity values (e.g., `--alpha(var(--color) / 90%)`)
+- **Bulk Processing**: Efficiently handles large sets of variables (tested with 75+ tokens)
+- **Smart Console Logging**: Collapsible groups for clean debugging output
 
-- **Flexible Source Mapping**: Maps variables from either local collections or external library collections
-- **Local Target Collections**: Creates new variables in local collections within your file
-- **Light/Dark Mode Support**: Automatically handles light and dark mode variable mappings
-- **ES5 Compatible**: Fully compatible with Figma's plugin environment
-- **CSS @theme Parsing**: Extracts variable definitions from CSS @theme blocks
+## Technical Architecture
+
+### Plugin Structure
+
+```
+theme-variables-mapper/
+├── manifest.json     # Plugin configuration
+├── code.js          # Main plugin logic (ES5 compatible)
+├── ui.html          # Plugin interface with inline CSS/JS
+└── README.md        # Documentation
+```
+
+### Technology Stack
+
+- **JavaScript**: ES5-compatible for Figma plugin environment
+- **Figma Plugin API**: For variable and collection management
+- **Promise-based**: Async handling for library imports
 
 ## How It Works
 
-### 1. CSS Structure Expected
+### 1. CSS Input Format
 
-The plugin expects CSS with this structure:
+The plugin expects CSS with this specific structure:
 
 ```css
+/* Theme variable definitions */
 @theme {
   --color-primary: var(--color-blue-500);
-  --color-secondary: var(--color-gray-500);
+  --color-danger: var(--fill-danger);
+  /* ... more theme variables ... */
 }
 
+/* Light mode values */
 :root,
 .light {
   --color-blue-500: var(--color-blue-75);
-  --color-gray-500: var(--color-gray-75);
+  --fill-danger: var(--color-red-75);
+  /* ... with optional opacity ... */
+  --stroke-danger: --alpha(var(--color-red-400) / 40%);
 }
 
+/* Dark mode values */
 .dark {
   --color-blue-500: var(--color-blue-25);
-  --color-gray-500: var(--color-gray-25);
+  --fill-danger: --alpha(var(--color-red-500) / 15%);
+  --stroke-danger: --alpha(var(--color-red-400) / 50%);
 }
 ```
 
-### 2. Variable Mapping Process
+### 2. Processing Flow
 
-1. **Upload CSS**: Upload a CSS file containing @theme variables
-2. **Select Source Collection**: Choose which collection contains the base color variables:
-   - **Local Collections**: Collections within your current Figma file
-   - **Library Collections**: External shared library collections
-3. **Choose Target**: Either create a new local collection or use an existing local collection for the theme variables
-4. **Apply**: The plugin creates variables like `color/primary` that reference the appropriate source variables
+1. **Collection Loading**
 
-### 3. Result
+   - Loads both library and local collections on startup
+   - UI automatically selects first library and first local collection
 
-You'll get theme variables that automatically switch between light and dark modes by referencing different source variables:
+2. **CSS Parsing**
 
-- `color/primary` (Light mode) → references `color/blue/75`
-- `color/primary` (Dark mode) → references `color/blue/25`
+   - Extracts variables from `@theme` block
+   - Maps light/dark mode values
+   - Converts CSS naming (hyphens) to Figma naming (slashes)
+   - Handles opacity values by appending them with underscore
 
-## Usage
+3. **Variable Creation/Update**
+   - Creates theme variables in target collection
+   - Sets up proper aliases to source variables
+   - Handles library imports asynchronously
+   - Maintains light/dark mode values
 
-1. **Prepare Your Collections**: Ensure you have either:
-   - A local collection with your base color variables, OR
-   - Access to a shared library with the required color variables
-2. **Run the Plugin**: Open the Theme Variables Mapper plugin in Figma
-3. **Upload CSS**: Select your CSS file with @theme definitions
-4. **Configure Mapping**:
-   - Select the source collection (local or library) containing your base colors
-   - Choose to create a new target collection or use an existing local collection
-5. **Apply Changes**: Review the preview and apply the variable creation
+### 3. Variable Naming Convention
 
-## Variable Naming Conventions
+| CSS Format                           | Figma Format       |
+| ------------------------------------ | ------------------ |
+| `--color-red-500`                    | `color/red/500`    |
+| `--color-red-500` (with 90% opacity) | `color/red/500_90` |
+| `--fill-danger`                      | `fill/danger`      |
+| `--color-primary`                    | `color/primary`    |
 
-- **CSS Variables**: Use hyphens with `--` prefix (e.g., `--color-red-500`)
-- **Figma Variables**: Use forward slashes (e.g., `color/red/500`)
-- **Conversion**: The plugin automatically converts between these formats
+## UI Components
 
-## Requirements
+### Collection Selection Screen
 
-- Figma desktop app or web app
-- Either local variable collections OR access to shared library collections with base color variables
-- CSS file with @theme variable definitions
+```
+┌─────────────────────────────────────┐
+│  📚 Available Collections           │
+│  ├─ Library Collections             │
+│  │  └─ Design System → Colors      │
+│  └─ Local Collections               │
+│     └─ Theme Variables (Local)     │
+├─────────────────────────────────────┤
+│  [Source Collection ▼] [Target ▼]  │
+│  [Next: Upload CSS File]            │
+└─────────────────────────────────────┘
+```
 
-## Technical Details
+### CSS Upload Screen
 
-- **ES5 Compatible**: Uses only ES5 JavaScript features for maximum compatibility
-- **Flexible Source Support**: Works with both local collections and external library collections
-- **Local Target Collections**: Always creates variables in local collections (targets cannot be library collections)
-- **Alias Creation**: Creates proper variable aliases that maintain relationships
-- **Library Import**: Automatically imports library variables when needed for referencing
+```
+┌─────────────────────────────────────┐
+│  📋 Selected Collections            │
+│  Source: Design System → Colors     │
+│  Target: Theme Variables (Local)    │
+├─────────────────────────────────────┤
+│     📁 Upload CSS File              │
+│     [Choose File]                   │
+└─────────────────────────────────────┘
+```
+
+### Preview Screen
+
+```
+┌─────────────────────────────────────┐
+│  [Cancel]  [Apply Changes]          │
+├─────────────────────────────────────┤
+│        75 theme variables found     │
+├─────────────────────────────────────┤
+│  ▼ 🎨 Variables to Create (75)     │
+│     color/fill/danger               │
+│     └─ Light: color/red/75          │
+│     └─ Dark: color/red/500_15       │
+└─────────────────────────────────────┘
+```
+
+### Results Screen
+
+```
+┌─────────────────────────────────────┐
+│  [Upload New File]  [Close]         │
+├─────────────────────────────────────┤
+│  ✅ Created: 70  ✏️ Updated: 5      │
+├─────────────────────────────────────┤
+│  ▶ ✅ Created Variables (70)        │
+│  ▶ ✏️ Updated Variables (5)         │
+│  ▶ ❌ Failed Variables (0)          │
+└─────────────────────────────────────┘
+```
+
+## Key Functions
+
+### code.js
+
+#### `loadCollections()`
+
+- Loads all available collections (library and local)
+- Sends collection data to UI for display
+- Handles async library loading with proper error handling
+
+#### `parseCSSContent(cssContent)`
+
+- Validates CSS content
+- Extracts theme variables using regex
+- Converts variable names to Figma format
+- Returns structured variable mappings
+
+#### `createVariablesFromCSS(...)`
+
+- Main orchestrator for variable creation
+- Routes to library or local processing based on source type
+- Manages target collection setup
+
+#### `processLibraryVariables(...)` / `processLocalVariables(...)`
+
+- Handles variable creation with proper alias setup
+- Library version uses async imports with Promise.all
+- Local version processes synchronously
+- Both use console.groupCollapsed for clean logging
+
+### ui.html
+
+#### `loadCollections()`
+
+- Sends message to plugin to load collections
+- Called on startup and reset
+
+#### `resetToUpload()`
+
+- Clears state and returns to collection selection
+- Calls `loadCollections()` to refresh and restore defaults
+
+#### `populateCollections(libs, locals)`
+
+- Populates dropdown menus
+- Auto-selects first library and first local collection
+
+#### `createVariableItem(item, type)`
+
+- Creates DOM elements for variable display
+- Shows different info based on preview/results context
+
+## Console Logging
+
+The plugin uses collapsible console groups for clean output:
+
+```javascript
+// Normal view
+📚 Loading all collections...
+✅ Found 1 local collections
+✅ Successfully loaded 1 library collections
+📄 Parsing CSS content...
+✅ Found 75 theme variables
+▼ ⚡ Processing 75 variables...    // Click to expand
+✅ All library imports completed
+📊 === FINAL RESULTS ===
+✅ Created: 70
+✏️ Updated: 5
+❌ Failed: 0
+
+// Expanded view shows all details
+▼ ⚡ Processing 75 variables...
+  🔄 Processing: color/fill/danger
+  ✏️ Updated: color/fill/danger
+  🔄 Processing: color/fill/primary
+  ✨ Created: color/fill/primary
+  // ... all 75 entries
+```
+
+## Error Handling
+
+- **Collection Loading**: Falls back to local-only if libraries fail
+- **CSS Parsing**: Validates content and shows clear error messages
+- **Variable Creation**: Tracks and reports failed variables individually
+- **Library Imports**: Handles async failures gracefully
+
+## Best Practices
+
+1. **CSS Organization**
+
+   - Keep `@theme` block clean with only variable mappings
+   - Ensure all referenced variables exist in light/dark blocks
+   - Use consistent naming conventions
+
+2. **Collection Management**
+
+   - Organize source tokens in a dedicated library
+   - Create a separate local collection for theme variables
+   - Use descriptive collection names
+
+3. **Large Files**
+   - The plugin handles 75+ variables efficiently
+   - Results start collapsed for better overview
+   - Use console expansion to debug specific issues
+
+## Limitations
+
+- **ES5 Only**: Due to Figma plugin environment constraints
+- **Color Variables Only**: Currently supports only COLOR type variables
+- **Local Targets**: Can only create variables in local collections
+- **Opacity Format**: Must use `--alpha(var(--color) / X%)` syntax
 
 ## Troubleshooting
 
-### Common Issues
+### Variables Not Found
 
-1. **Variables Not Found**: Ensure your source collection contains variables with the exact names expected by the CSS
-2. **Mode Mismatch**: The plugin expects "Light" and "Dark" modes in collections
-3. **CSS Format**: Verify your CSS follows the expected @theme structure
+- Check exact naming in source collection
+- Verify the plugin's variable name conversion logic
+- Use console logs to see what names are being searched
 
-### Debug Information
+### Import Failures
 
-The plugin provides detailed console logging to help debug variable matching issues. Check the browser console for detailed information about:
+- Ensure you have access to the library
+- Check library publishing status
+- Verify variable keys haven't changed
 
-- Variable discovery in source collections
-- CSS parsing results
-- Variable creation success/failure
+### Performance Issues
 
-## Changes from Original
+- Large files are handled with async batching
+- Console logs are collapsed by default
+- UI uses accordions to manage long lists
 
-This version has been modified to:
+## Future Enhancements
 
-- Support both local collections AND external library collections as sources
-- Always use local collections as targets (for variable creation)
-- Support flexible source-to-local variable mapping
-- Maintain full ES5 compatibility
-- Provide clearer UI for collection selection with library/local indicators
+- Support for additional variable types (spacing, typography)
+- Export functionality for created mappings
+- Batch processing of multiple CSS files
+- Variable validation and preview
+- Undo/redo functionality
 
-## Development
+## Version History
 
-The plugin consists of:
-
-- `code.js`: Main plugin logic (ES5 compatible)
-- `ui.html`: Plugin interface with inline CSS and JavaScript
-- `manifest.json`: Plugin configuration
-- `check-es5.js`: ES5 compatibility checker
+- **1.0.0**: Initial release with core functionality
+- **1.1.0**: Added console grouping and UI improvements
+- **1.2.0**: Fixed async handling and button positioning
