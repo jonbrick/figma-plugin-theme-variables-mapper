@@ -70,7 +70,7 @@
       }
 
       .header h1 {
-        font-size: 20px;
+        font-size: 24px;
         font-weight: 700;
         color: hsl(var(--foreground));
         margin-bottom: 4px;
@@ -205,7 +205,53 @@
         margin-left: 12px;
         font-family: "SF Mono", "Menlo", "Monaco", "Courier New", monospace;
       }
+      .collection-selector {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: var(--radius);
+        padding: 20px;
+        margin-bottom: 16px;
+      }
 
+      .collection-selector h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: hsl(var(--foreground));
+      }
+
+      .collection-option {
+        margin-bottom: 12px;
+      }
+
+      .collection-option label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: hsl(var(--foreground));
+        cursor: pointer;
+      }
+
+      .collection-option input[type="radio"] {
+        margin: 0;
+      }
+
+      .collection-option select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid hsl(var(--border));
+        border-radius: var(--radius);
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-size: 13px;
+        margin-top: 8px;
+      }
+
+      .collection-option select:disabled {
+        opacity: 0.5;
+        pointer-events: none;
+      }
       .library-selector {
         background: hsl(var(--card));
         border: 1px solid hsl(var(--border));
@@ -283,8 +329,15 @@
         box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
       }
 
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
       .summary-card {
-        padding: 24px;
+        padding: 24px 20px;
         text-align: center;
       }
 
@@ -356,24 +409,10 @@
         align-items: center;
         cursor: pointer;
         user-select: none;
-        position: relative;
-        padding-right: 40px;
       }
 
-      .result-title::after {
-        content: "▼";
-        font-size: 10px;
-        position: absolute;
-        right: 16px;
-        transition: transform 0.2s ease;
-      }
-
-      .result-group.collapsed .result-title::after {
-        transform: rotate(-90deg);
-      }
-
-      .result-group.collapsed .variable-list {
-        display: none;
+      .result-title:hover {
+        background: hsl(var(--muted) / 0.8);
       }
 
       .result-count {
@@ -487,175 +526,6 @@
         line-height: 1.4;
       }
 
-      /* Form Elements */
-      input[type="text"],
-      input[type="number"],
-      select,
-      textarea {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid hsl(var(--border));
-        border-radius: var(--radius);
-        background: hsl(var(--background));
-        color: hsl(var(--foreground));
-        font-size: 13px;
-        transition: all 0.2s ease;
-      }
-
-      input[type="text"]:focus,
-      input[type="number"]:focus,
-      select:focus,
-      textarea:focus {
-        outline: none;
-        border-color: hsl(var(--primary));
-        box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
-      }
-
-      label {
-        display: block;
-        font-size: 13px;
-        font-weight: 500;
-        color: hsl(var(--foreground));
-        margin-bottom: 8px;
-      }
-
-      .form-group {
-        margin-bottom: 16px;
-      }
-
-      /* Collection Selection */
-      .collection-card {
-        background: hsl(var(--card));
-        border: 1px solid hsl(var(--border));
-        border-radius: var(--radius);
-        padding: 24px;
-        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-      }
-
-      .collection-card h3 {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 16px;
-        color: hsl(var(--foreground));
-      }
-
-      .radio-group {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .radio-option {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        cursor: pointer;
-        padding: 12px;
-        border-radius: var(--radius);
-        border: 1px solid transparent;
-        transition: all 0.2s ease;
-      }
-
-      .radio-option:hover {
-        background: hsl(var(--muted) / 0.5);
-      }
-
-      .radio-option.selected {
-        background: hsl(var(--accent));
-        border-color: hsl(var(--primary));
-      }
-
-      .radio-input {
-        appearance: none;
-        width: 16px;
-        height: 16px;
-        border: 2px solid hsl(var(--border));
-        border-radius: 50%;
-        margin: 0;
-        position: relative;
-        cursor: pointer;
-        flex-shrink: 0;
-        margin-top: 2px;
-      }
-
-      .radio-input:checked {
-        border-color: hsl(var(--primary));
-      }
-
-      .radio-input:checked::after {
-        content: "";
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        width: 8px;
-        height: 8px;
-        background: hsl(var(--primary));
-        border-radius: 50%;
-      }
-
-      .radio-content {
-        flex: 1;
-      }
-
-      .radio-label {
-        font-weight: 600;
-        color: hsl(var(--foreground));
-        margin-bottom: 4px;
-        display: block;
-      }
-
-      .radio-description {
-        font-size: 12px;
-        color: hsl(var(--muted-foreground));
-        line-height: 1.4;
-      }
-
-      .collection-select {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid hsl(var(--border));
-        border-radius: var(--radius);
-        background: hsl(var(--background));
-        color: hsl(var(--foreground));
-        font-size: 13px;
-        margin-top: 8px;
-      }
-
-      .collection-input {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid hsl(var(--border));
-        border-radius: var(--radius);
-        background: hsl(var(--background));
-        color: hsl(var(--foreground));
-        font-size: 13px;
-        margin-top: 8px;
-      }
-
-      .collection-input:focus,
-      .collection-select:focus {
-        outline: none;
-        border-color: hsl(var(--primary));
-        box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
-      }
-
-      .summary-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-        margin-bottom: 20px;
-      }
-
-      .warning {
-        background: hsl(var(--warning) / 0.1);
-        border: 1px solid hsl(var(--warning) / 0.3);
-        border-radius: var(--radius);
-        padding: 12px;
-        color: hsl(var(--warning));
-        font-size: 12px;
-        margin-bottom: 16px;
-      }
-
       /* Responsive */
       @media (max-width: 480px) {
         body {
@@ -688,12 +558,8 @@
 
       <div id="upload-section" class="section">
         <div class="library-info" id="library-info">
-          <h3>📚 Available Libraries</h3>
-          <div id="library-warning" class="warning hidden">
-            ⚠️ Some library collections may not have loaded properly. Check the
-            console for details.
-          </div>
-          <div id="library-list">Loading libraries...</div>
+          <h3>📚 Available Collections</h3>
+          <div id="library-list">Loading collections...</div>
         </div>
 
         <div class="upload-area" id="upload-area">
@@ -721,61 +587,43 @@
         <h2>📋 Configure & Preview</h2>
 
         <div class="library-selector">
-          <h3>📚 Select Library Collection</h3>
-          <select id="library-select">
-            <option value="">Choose a library collection...</option>
+          <h3>🎯 Select Source Collection</h3>
+          <p
+            style="
+              font-size: 12px;
+              color: hsl(var(--muted-foreground));
+              margin-bottom: 12px;
+            "
+          >
+            Choose which local collection contains the base colors you want to
+            reference.
+          </p>
+          <select id="source-collection-select">
+            <option value="">Choose source collection...</option>
           </select>
         </div>
 
-        <div class="collection-card">
-          <h3>📁 Select Variable Collection</h3>
-          <div class="radio-group">
-            <label class="radio-option" id="existing-option">
+        <div class="collection-selector">
+          <h3>📁 Target Collection</h3>
+          <div class="collection-option">
+            <label>
               <input
                 type="radio"
-                name="collection-type"
-                value="existing"
-                class="radio-input"
-                id="existing-radio"
+                name="collection-choice"
+                value="new"
                 checked
               />
-              <div class="radio-content">
-                <span class="radio-label">Use Existing Collection</span>
-                <p class="radio-description">
-                  Add variables to an existing collection
-                </p>
-                <select
-                  class="collection-select"
-                  id="existing-collection-select"
-                >
-                  <option value="">Choose an existing collection...</option>
-                </select>
-              </div>
+              Create new target collection
             </label>
-
-            <label class="radio-option" id="new-option">
-              <input
-                type="radio"
-                name="collection-type"
-                value="new"
-                class="radio-input"
-                id="new-radio"
-              />
-              <div class="radio-content">
-                <span class="radio-label">Create New Collection</span>
-                <p class="radio-description">
-                  Create a new collection for these variables
-                </p>
-                <input
-                  type="text"
-                  class="collection-input"
-                  id="new-collection-input"
-                  placeholder="New Collection Name"
-                  value="Theme Variables"
-                  style="display: none"
-                />
-              </div>
+          </div>
+          <div class="collection-option">
+            <label>
+              <input type="radio" name="collection-choice" value="existing" />
+              Use existing target collection
             </label>
+            <select id="existing-collection-select" disabled>
+              <option value="">Choose target collection...</option>
+            </select>
           </div>
         </div>
 
@@ -787,18 +635,15 @@
         </div>
 
         <div id="preview-variables" class="result-group">
-          <h3 class="result-title">
-            🎨 Variables to Create
-            <span class="result-count" id="preview-count">0</span>
-          </h3>
+          <h3 class="result-title">🎨 Variables to Create</h3>
           <div id="preview-variables-list" class="variable-list"></div>
         </div>
 
         <div class="actions">
+          <button id="cancel-btn" class="btn btn-secondary">Cancel</button>
           <button id="apply-btn" class="btn btn-primary" disabled>
             Apply Changes
           </button>
-          <button id="cancel-btn" class="btn btn-secondary">Cancel</button>
         </div>
       </div>
 
@@ -827,26 +672,17 @@
         </div>
 
         <div id="results-created" class="result-group">
-          <h3 class="result-title">
-            ✅ Created Variables
-            <span class="result-count" id="created-result-count">0</span>
-          </h3>
+          <h3 class="result-title">✅ Created Variables</h3>
           <div id="results-created-list" class="variable-list"></div>
         </div>
 
         <div id="results-updated" class="result-group">
-          <h3 class="result-title">
-            ⚠️ Updated Variables
-            <span class="result-count" id="updated-result-count">0</span>
-          </h3>
+          <h3 class="result-title">⚠️ Updated Variables</h3>
           <div id="results-updated-list" class="variable-list"></div>
         </div>
 
         <div id="results-failed" class="result-group">
-          <h3 class="result-title">
-            ❌ Failed Variables
-            <span class="result-count" id="failed-result-count">0</span>
-          </h3>
+          <h3 class="result-title">❌ Failed Variables</h3>
           <div id="results-failed-list" class="variable-list"></div>
         </div>
 
@@ -874,290 +710,369 @@
 
       var isProcessing = false;
       var currentResults = null;
-      var availableLibraries = [];
-      var localCollections = [];
+      var availableCollections = [];
 
-      var elements = {
-        fileInput: document.getElementById("file-input"),
-        browseBtn: document.getElementById("browse-btn"),
-        uploadArea: document.getElementById("upload-area"),
-        librarySelect: document.getElementById("library-select"),
-        existingRadio: document.getElementById("existing-radio"),
-        newRadio: document.getElementById("new-radio"),
-        existingCollectionSelect: document.getElementById(
-          "existing-collection-select"
-        ),
-        newCollectionInput: document.getElementById("new-collection-input"),
-        uploadNewBtn: document.getElementById("upload-new-btn"),
-        closeBtn: document.getElementById("close-btn"),
-        retryBtn: document.getElementById("retry-btn"),
-        cancelBtn: document.getElementById("cancel-btn"),
-        applyBtn: document.getElementById("apply-btn"),
-        loadingText: document.getElementById("loading-text"),
-        errorMessage: document.getElementById("error-message"),
-        previewTotal: document.getElementById("preview-total"),
-        previewCount: document.getElementById("preview-count"),
-        previewVariablesList: document.getElementById("preview-variables-list"),
-        createdCount: document.getElementById("created-count"),
-        updatedCount: document.getElementById("updated-count"),
-        failedCount: document.getElementById("failed-count"),
-        createdResultCount: document.getElementById("created-result-count"),
-        updatedResultCount: document.getElementById("updated-result-count"),
-        failedResultCount: document.getElementById("failed-result-count"),
-        resultsCreatedList: document.getElementById("results-created-list"),
-        resultsUpdatedList: document.getElementById("results-updated-list"),
-        resultsFailedList: document.getElementById("results-failed-list"),
-        libraryWarning: document.getElementById("library-warning"),
-      };
+      document.addEventListener("DOMContentLoaded", function () {
+        var elements = {
+          fileInput: document.getElementById("file-input"),
+          browseBtn: document.getElementById("browse-btn"),
+          uploadArea: document.getElementById("upload-area"),
+          sourceCollectionSelect: document.getElementById(
+            "source-collection-select"
+          ),
+          collectionRadios: document.querySelectorAll(
+            'input[name="collection-choice"]'
+          ),
+          existingCollectionSelect: document.getElementById(
+            "existing-collection-select"
+          ),
+          uploadNewBtn: document.getElementById("upload-new-btn"),
+          closeBtn: document.getElementById("close-btn"),
+          retryBtn: document.getElementById("retry-btn"),
+          cancelBtn: document.getElementById("cancel-btn"),
+          applyBtn: document.getElementById("apply-btn"),
+          loadingText: document.getElementById("loading-text"),
+        };
 
-      function handleFileSelect(event) {
-        var file = event.target.files[0];
-        if (file) {
-          processFile(file);
-        }
-      }
-
-      function handleCollectionTypeChange() {
-        var existingOption = document.getElementById("existing-option");
-        var newOption = document.getElementById("new-option");
-
-        // Update visual selection
-        if (elements.existingRadio.checked) {
-          existingOption.classList.add("selected");
-          newOption.classList.remove("selected");
-          elements.existingCollectionSelect.style.display = "block";
-          elements.newCollectionInput.style.display = "none";
-        } else {
-          newOption.classList.add("selected");
-          existingOption.classList.remove("selected");
-          elements.existingCollectionSelect.style.display = "none";
-          elements.newCollectionInput.style.display = "block";
+        // File input listener
+        if (elements.fileInput) {
+          elements.fileInput.addEventListener("change", function (event) {
+            if (isProcessing) return;
+            var file = event.target.files[0];
+            if (file) processFile(file);
+          });
         }
 
-        validateForm();
-      }
+        // Button listeners
+        if (elements.browseBtn) {
+          elements.browseBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            if (!isProcessing && elements.fileInput) elements.fileInput.click();
+          });
+        }
 
-      function validateForm() {
-        var selectedLibrary = elements.librarySelect.value;
-        var collectionChoice = elements.existingRadio.checked
-          ? "existing"
-          : "new";
-        var existingCollectionId = elements.existingCollectionSelect.value;
-        var newCollectionName = elements.newCollectionInput.value.trim();
+        if (elements.uploadArea) {
+          elements.uploadArea.addEventListener("click", function (e) {
+            if (
+              e.target === elements.browseBtn ||
+              (elements.browseBtn && elements.browseBtn.contains(e.target))
+            )
+              return;
+            if (!isProcessing && elements.fileInput) elements.fileInput.click();
+          });
+        }
 
-        var isValid = selectedLibrary !== "";
-        if (isValid) {
+        if (elements.sourceCollectionSelect) {
+          elements.sourceCollectionSelect.addEventListener(
+            "change",
+            updateApplyButton
+          );
+        }
+
+        // Collection choice listeners
+        if (elements.collectionRadios) {
+          for (var i = 0; i < elements.collectionRadios.length; i++) {
+            elements.collectionRadios[i].addEventListener(
+              "change",
+              function () {
+                var existingSelect = elements.existingCollectionSelect;
+                if (this.value === "existing") {
+                  existingSelect.disabled = false;
+                } else {
+                  existingSelect.disabled = true;
+                  existingSelect.value = "";
+                }
+                updateApplyButton();
+              }
+            );
+          }
+        }
+
+        if (elements.existingCollectionSelect) {
+          elements.existingCollectionSelect.addEventListener(
+            "change",
+            updateApplyButton
+          );
+        }
+
+        if (elements.cancelBtn) {
+          elements.cancelBtn.addEventListener("click", resetToUpload);
+        }
+        if (elements.uploadNewBtn) {
+          elements.uploadNewBtn.addEventListener("click", resetToUpload);
+        }
+        if (elements.retryBtn) {
+          elements.retryBtn.addEventListener("click", resetToUpload);
+        }
+
+        if (elements.applyBtn) {
+          elements.applyBtn.addEventListener("click", function () {
+            var selectedSourceCollection =
+              elements.sourceCollectionSelect.value;
+            var collectionChoiceElement = document.querySelector(
+              'input[name="collection-choice"]:checked'
+            );
+            var collectionChoice = collectionChoiceElement
+              ? collectionChoiceElement.value
+              : null;
+            var existingCollectionId = elements.existingCollectionSelect.value;
+
+            if (
+              currentResults &&
+              currentResults.variables &&
+              selectedSourceCollection &&
+              collectionChoice
+            ) {
+              if (collectionChoice === "existing" && !existingCollectionId) {
+                alert(
+                  "Please select an existing target collection or choose to create a new one."
+                );
+                return;
+              }
+              // Find the source collection type
+              var sourceCollectionType = "local"; // default
+              for (var i = 0; i < availableCollections.length; i++) {
+                if (availableCollections[i].id === selectedSourceCollection) {
+                  sourceCollectionType = availableCollections[i].type;
+                  break;
+                }
+              }
+
+              createVariables(
+                currentResults.variables,
+                selectedSourceCollection,
+                sourceCollectionType,
+                collectionChoice,
+                existingCollectionId
+              );
+            }
+          });
+        }
+
+        if (elements.closeBtn) {
+          elements.closeBtn.addEventListener("click", function () {
+            parent.postMessage(
+              { pluginMessage: { type: "close-plugin" } },
+              "*"
+            );
+          });
+        }
+
+        // Message handler
+        window.onmessage = function (event) {
+          var pluginMessage = event.data.pluginMessage;
+          var type = pluginMessage.type;
+          var success = pluginMessage.success;
+          var results = pluginMessage.results;
+          var message = pluginMessage.message;
+          var sourceCollections = pluginMessage.sourceCollections;
+          var targetCollections = pluginMessage.targetCollections;
+          var warning = pluginMessage.warning;
+
+          switch (type) {
+            case "collections-loaded":
+              if (success) {
+                availableCollections = sourceCollections;
+                displayCollectionInfo(sourceCollections);
+                populateSourceCollectionSelect(sourceCollections);
+                populateTargetCollectionSelect(targetCollections);
+                if (warning) {
+                  console.warn("⚠️ " + warning);
+                }
+              } else {
+                displayError(message || "Failed to load collections");
+              }
+              break;
+
+            case "parsing-complete":
+              isProcessing = false;
+              if (success) {
+                currentResults = results;
+                displayPreview(currentResults);
+                showSection("preview-section");
+              } else {
+                displayError(message);
+                showSection("error-section");
+              }
+              break;
+
+            case "creation-complete":
+              isProcessing = false;
+              if (success) {
+                displayCreationResults(results);
+                showSection("results-section");
+              } else {
+                displayError(message);
+                showSection("error-section");
+              }
+              break;
+          }
+        };
+
+        function updateApplyButton() {
+          var sourceCollectionSelected = elements.sourceCollectionSelect.value;
+          var collectionChoiceElement = document.querySelector(
+            'input[name="collection-choice"]:checked'
+          );
+          var collectionChoice = collectionChoiceElement
+            ? collectionChoiceElement.value
+            : null;
+          var existingCollectionSelected =
+            elements.existingCollectionSelect.value;
+
+          var canApply =
+            sourceCollectionSelected && collectionChoice && currentResults;
+
           if (collectionChoice === "existing") {
-            isValid = existingCollectionId !== "";
-          } else {
-            isValid = newCollectionName !== "";
+            canApply = canApply && existingCollectionSelected;
           }
+
+          elements.applyBtn.disabled = !canApply;
+        }
+      });
+
+      function processFile(file) {
+        if (isProcessing) return;
+        isProcessing = true;
+
+        if (!file.name.endsWith(".css")) {
+          displayError("Please upload a CSS file (.css extension required).");
+          showSection("error-section");
+          isProcessing = false;
+          return;
         }
 
-        elements.applyBtn.disabled = !isValid;
+        showSection("loading-section");
+
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          parent.postMessage(
+            {
+              pluginMessage: { type: "parse-css", cssContent: e.target.result },
+            },
+            "*"
+          );
+        };
+
+        reader.onerror = function () {
+          console.error("File read error");
+          displayError("Error reading file. Please try again.");
+          showSection("error-section");
+          isProcessing = false;
+        };
+
+        reader.readAsText(file);
       }
 
-      function handleMessage(event) {
-        var message = event.data.pluginMessage;
-        if (!message) return;
-
-        console.log("Received message:", message.type);
-
-        switch (message.type) {
-          case "collections-loaded":
-            if (message.success) {
-              handleCollectionsLoaded(message);
-            } else {
-              displayError(message.message || "Failed to load collections");
-            }
-            break;
-          case "parsing-complete":
-            if (message.success) {
-              handleParsingComplete(message.results);
-            } else {
-              displayError(message.message || "Failed to parse CSS");
-            }
-            break;
-          case "creation-complete":
-            if (message.success) {
-              handleCreationComplete(message.results);
-            } else {
-              displayError(message.message || "Failed to create variables");
-            }
-            break;
-          default:
-            console.log("Unknown message type:", message.type);
-        }
+      function loadCollections() {
+        document.getElementById("loading-text").textContent =
+          "Loading collections...";
+        parent.postMessage({ pluginMessage: { type: "get-collections" } }, "*");
       }
 
-      function handleCollectionsLoaded(data) {
-        console.log("Received collections data:", data);
+      function displayCollectionInfo(collections) {
+        var collectionList = document.getElementById("library-list");
 
-        availableLibraries = data.libraries || [];
-        localCollections = data.localCollections || [];
-
-        // Show warning if there were library errors
-        if (data.libraryError) {
-          console.warn("Library loading error:", data.libraryError);
-          elements.libraryWarning.classList.remove("hidden");
+        if (!collections || collections.length === 0) {
+          collectionList.innerHTML =
+            '<div style="color: hsl(var(--muted-foreground)); font-style: italic;">No variable collections found</div>';
+          return;
         }
 
-        // Update library info display
-        var libraryList = document.getElementById("library-list");
-        libraryList.innerHTML = "";
+        var html = "";
+        for (var i = 0; i < collections.length; i++) {
+          var collection = collections[i];
+          var errorText = collection.error
+            ? " ⚠️ Error: " + collection.error
+            : "";
+          var icon = collection.type === "library" ? "📚" : "📁";
+          var modeText = collection.modeCount
+            ? ", " + collection.modeCount + " modes"
+            : "";
 
-        if (availableLibraries.length === 0) {
-          libraryList.innerHTML =
-            '<div class="library-item">No libraries found</div>';
-        } else {
-          for (var i = 0; i < availableLibraries.length; i++) {
-            var library = availableLibraries[i];
-            var libraryHtml =
-              '<div class="library-item">' +
-              '<div class="library-name">' +
-              library.libraryName +
-              "</div>" +
-              '<div class="collection-item">' +
-              library.name +
-              " (" +
-              library.variableCount +
-              " vars)";
-
-            if (library.error) {
-              libraryHtml +=
-                ' <span class="error-text">(' + library.error + ")</span>";
-            }
-
-            libraryHtml += "</div></div>";
-            libraryList.innerHTML += libraryHtml;
-          }
-        }
-
-        // Populate library select dropdown
-        elements.librarySelect.innerHTML =
-          '<option value="">Choose a library collection...</option>';
-        for (var i = 0; i < availableLibraries.length; i++) {
-          var library = availableLibraries[i];
-          var option = document.createElement("option");
-          option.value = library.id;
-          option.textContent =
-            library.libraryName +
-            " / " +
-            library.name +
+          html += '<div class="library-item">';
+          html +=
+            '<div class="library-name">' +
+            icon +
+            " " +
+            collection.name +
             " (" +
-            library.variableCount +
-            " vars)";
-          elements.librarySelect.appendChild(option);
+            collection.variableCount +
+            " variables" +
+            modeText +
+            ")" +
+            errorText +
+            "</div>";
+          html += "</div>";
+        }
+        collectionList.innerHTML = html;
+      }
+
+      function populateSourceCollectionSelect(collections) {
+        var select = document.getElementById("source-collection-select");
+
+        // Clear existing options except the first one
+        while (select.children.length > 1) {
+          select.removeChild(select.lastChild);
         }
 
-        // Populate existing collection select
-        elements.existingCollectionSelect.innerHTML =
-          '<option value="">Choose an existing collection...</option>';
-        for (var i = 0; i < localCollections.length; i++) {
-          var collection = localCollections[i];
+        for (var i = 0; i < collections.length; i++) {
+          var collection = collections[i];
+          var option = document.createElement("option");
+          option.value = collection.id;
+          option.textContent =
+            collection.name + " (" + collection.variableCount + " variables)";
+          select.appendChild(option);
+        }
+
+        console.log("📚 Populated source collections in dropdown");
+      }
+
+      function populateTargetCollectionSelect(collections) {
+        var select = document.getElementById("existing-collection-select");
+
+        // Clear existing options except the first one
+        while (select.children.length > 1) {
+          select.removeChild(select.lastChild);
+        }
+
+        for (var i = 0; i < collections.length; i++) {
+          var collection = collections[i];
           var option = document.createElement("option");
           option.value = collection.id;
           option.textContent =
             collection.name + " (" + collection.modeCount + " modes)";
-          elements.existingCollectionSelect.appendChild(option);
+          select.appendChild(option);
         }
-
-        validateForm();
       }
 
-      function handleParsingComplete(results) {
-        isProcessing = false;
-        currentResults = results;
+      function createVariables(
+        variables,
+        selectedSourceCollectionId,
+        sourceCollectionType,
+        collectionChoice,
+        existingCollectionId
+      ) {
+        if (isProcessing) return;
+        isProcessing = true;
 
-        if (!results || !results.variables || results.variables.length === 0) {
-          displayError("No @theme variables found in the CSS file.");
-          return;
-        }
+        document.getElementById("loading-text").textContent =
+          "Creating variables...";
+        showSection("loading-section");
 
-        // Update preview
-        elements.previewTotal.textContent = results.totalFound;
-        elements.previewCount.textContent = results.variables.length;
-
-        // Populate preview list
-        populateResultList(
-          elements.previewVariablesList,
-          results.variables,
-          false
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "create-variables",
+              variablesToCreate: variables,
+              selectedSourceCollectionId: selectedSourceCollectionId,
+              sourceCollectionType: sourceCollectionType,
+              collectionChoice: collectionChoice,
+              existingCollectionId: existingCollectionId,
+            },
+          },
+          "*"
         );
-
-        showSection("preview-section");
-      }
-
-      function handleCreationComplete(results) {
-        isProcessing = false;
-
-        // Update summary counts
-        elements.createdCount.textContent = results.summary.created;
-        elements.updatedCount.textContent = results.summary.updated;
-        elements.failedCount.textContent = results.summary.failed;
-
-        elements.createdResultCount.textContent = results.created.length;
-        elements.updatedResultCount.textContent = results.updated.length;
-        elements.failedResultCount.textContent = results.failed.length;
-
-        // Populate result lists
-        populateResultList(elements.resultsCreatedList, results.created, false);
-        populateResultList(elements.resultsUpdatedList, results.updated, false);
-        populateResultList(elements.resultsFailedList, results.failed, true);
-
-        showSection("results-section");
-      }
-
-      function populateResultList(listElement, items, showErrors) {
-        listElement.innerHTML = "";
-
-        if (items.length === 0) {
-          listElement.innerHTML = '<div class="variable-item">No items</div>';
-          return;
-        }
-
-        for (var i = 0; i < items.length; i++) {
-          var item = items[i];
-          var div = document.createElement("div");
-          div.className = "variable-item";
-
-          var nameDiv = document.createElement("div");
-          nameDiv.className = "variable-name";
-          nameDiv.textContent = item.variableName;
-
-          var referencesDiv = document.createElement("div");
-          referencesDiv.className = "variable-references";
-
-          if (showErrors && item.error) {
-            var errorDiv = document.createElement("div");
-            errorDiv.className = "error-text";
-            errorDiv.textContent = item.error;
-            referencesDiv.appendChild(errorDiv);
-          } else {
-            var lightRef = document.createElement("div");
-            lightRef.className = "reference-item";
-            lightRef.innerHTML =
-              '<div class="reference-label">Light:</div>' +
-              '<div class="reference-value">' +
-              (item.lightReference || item.lightLibraryVar || "N/A") +
-              "</div>";
-
-            var darkRef = document.createElement("div");
-            darkRef.className = "reference-item";
-            darkRef.innerHTML =
-              '<div class="reference-label">Dark:</div>' +
-              '<div class="reference-value">' +
-              (item.darkReference || item.darkLibraryVar || "N/A") +
-              "</div>";
-
-            referencesDiv.appendChild(lightRef);
-            referencesDiv.appendChild(darkRef);
-          }
-
-          div.appendChild(nameDiv);
-          div.appendChild(referencesDiv);
-          listElement.appendChild(div);
-        }
       }
 
       function showSection(sectionId) {
@@ -1168,269 +1083,218 @@
           "results-section",
           "error-section",
         ];
-
         for (var i = 0; i < sections.length; i++) {
           var section = document.getElementById(sections[i]);
-          if (section) {
-            section.classList.add("hidden");
-          }
+          if (section) section.classList.add("hidden");
         }
-
         var targetSection = document.getElementById(sectionId);
-        if (targetSection) {
-          targetSection.classList.remove("hidden");
-        }
-      }
-
-      function displayError(message) {
-        console.error("Displaying error:", message);
-        elements.errorMessage.textContent = message;
-        isProcessing = false;
-        showSection("error-section");
-      }
-
-      function processFile(file) {
-        if (isProcessing) return;
-
-        if (!file.name.endsWith(".css")) {
-          displayError("Please upload a CSS file (.css extension required).");
-          return;
-        }
-
-        isProcessing = true;
-        showSection("loading-section");
-        elements.loadingText.textContent = "Parsing CSS file...";
-
-        var reader = new FileReader();
-        reader.onload = function (e) {
-          parent.postMessage(
-            {
-              pluginMessage: {
-                type: "parse-css",
-                cssContent: e.target.result,
-              },
-            },
-            "*"
-          );
-        };
-
-        reader.onerror = function () {
-          console.error("File read error");
-          displayError("Error reading file. Please try again.");
-        };
-
-        reader.readAsText(file);
-      }
-
-      function createVariables() {
-        if (isProcessing || !currentResults || !currentResults.variables)
-          return;
-
-        var selectedLibrary = elements.librarySelect.value;
-        var collectionChoice = elements.existingRadio.checked
-          ? "existing"
-          : "new";
-        var existingCollectionId = elements.existingCollectionSelect.value;
-
-        if (!selectedLibrary) {
-          alert("Please select a library collection.");
-          return;
-        }
-
-        if (collectionChoice === "existing" && !existingCollectionId) {
-          alert(
-            "Please select an existing collection or choose to create a new one."
-          );
-          return;
-        }
-
-        isProcessing = true;
-        showSection("loading-section");
-        elements.loadingText.textContent = "Creating variables...";
-
-        parent.postMessage(
-          {
-            pluginMessage: {
-              type: "create-variables",
-              variablesToCreate: currentResults.variables,
-              selectedLibraryId: selectedLibrary,
-              collectionChoice: collectionChoice,
-              existingCollectionId: existingCollectionId,
-            },
-          },
-          "*"
-        );
+        if (targetSection) targetSection.classList.remove("hidden");
       }
 
       function resetToUpload() {
         isProcessing = false;
         currentResults = null;
+        availableCollections = [];
+        document.getElementById("loading-text").textContent =
+          "Parsing CSS file...";
 
-        // Reset form
-        elements.fileInput.value = "";
-        elements.librarySelect.value = "";
-        elements.existingCollectionSelect.value = "";
-        elements.newCollectionInput.value = "Theme Variables";
-        elements.existingRadio.checked = true;
-        elements.newRadio.checked = false;
+        // Reset source collection select
+        var sourceCollectionSelect = document.getElementById(
+          "source-collection-select"
+        );
+        sourceCollectionSelect.innerHTML =
+          '<option value="">Choose source collection...</option>';
 
-        // Reset visual states
-        document.getElementById("existing-option").classList.add("selected");
-        document.getElementById("new-option").classList.remove("selected");
-        elements.existingCollectionSelect.style.display = "block";
-        elements.newCollectionInput.style.display = "none";
+        // Reset collection select
+        var collectionSelect = document.getElementById(
+          "existing-collection-select"
+        );
+        collectionSelect.innerHTML =
+          '<option value="">Choose target collection...</option>';
+        collectionSelect.disabled = true;
 
-        elements.applyBtn.disabled = true;
-        elements.loadingText.textContent = "Parsing CSS file...";
-        elements.libraryWarning.classList.add("hidden");
+        // Reset radio buttons
+        document.querySelector(
+          'input[name="collection-choice"][value="new"]'
+        ).checked = true;
 
         showSection("upload-section");
+        var fileInput = document.getElementById("file-input");
+        if (fileInput) fileInput.value = "";
+      }
 
-        // Reload collections
-        parent.postMessage(
-          {
-            pluginMessage: { type: "get-collections" },
-          },
-          "*"
+      function displayPreview(results) {
+        document.getElementById("preview-total").textContent =
+          results.totalFound;
+
+        populateVariableList(
+          "preview-variables",
+          "preview-variables-list",
+          results.variables,
+          "preview"
+        );
+
+        // Update apply button state
+        function updateButton() {
+          var sourceCollectionSelect = document.getElementById(
+            "source-collection-select"
+          );
+          var collectionChoiceElement = document.querySelector(
+            'input[name="collection-choice"]:checked'
+          );
+          var collectionChoice = collectionChoiceElement
+            ? collectionChoiceElement.value
+            : null;
+          var existingCollectionSelect = document.getElementById(
+            "existing-collection-select"
+          );
+
+          var canApply = sourceCollectionSelect.value && collectionChoice;
+          if (collectionChoice === "existing") {
+            canApply = canApply && existingCollectionSelect.value;
+          }
+
+          document.getElementById("apply-btn").disabled = !canApply;
+        }
+
+        updateButton();
+      }
+
+      function displayCreationResults(results) {
+        document.getElementById("created-count").textContent =
+          results.summary.created;
+        document.getElementById("updated-count").textContent =
+          results.summary.updated;
+        document.getElementById("failed-count").textContent =
+          results.summary.failed;
+
+        populateVariableList(
+          "results-created",
+          "results-created-list",
+          results.created,
+          "created"
+        );
+        populateVariableList(
+          "results-updated",
+          "results-updated-list",
+          results.updated,
+          "updated"
+        );
+        populateVariableList(
+          "results-failed",
+          "results-failed-list",
+          results.failed,
+          "failed"
         );
       }
 
-      // Event listeners setup
-      document.addEventListener("DOMContentLoaded", function () {
-        console.log("DOM Content Loaded");
+      function populateVariableList(sectionId, listId, items, type) {
+        var section = document.getElementById(sectionId);
+        var list = document.getElementById(listId);
 
-        // File input listener
-        if (elements.fileInput) {
-          elements.fileInput.addEventListener("change", handleFileSelect);
+        if (items && items.length > 0) {
+          list.innerHTML = "";
+
+          for (var i = 0; i < items.length; i++) {
+            list.appendChild(createVariableItem(items[i], type));
+          }
+
+          // Update title with count
+          var title = section.querySelector(".result-title");
+          var existingCount = title.querySelector(".result-count");
+          if (existingCount) {
+            existingCount.remove();
+          }
+          var countSpan = document.createElement("span");
+          countSpan.className = "result-count";
+          countSpan.textContent =
+            items.length +
+            " " +
+            (type === "preview"
+              ? "variables"
+              : type === "created"
+              ? "created"
+              : type === "updated"
+              ? "updated"
+              : "failed");
+          title.appendChild(countSpan);
+
+          if (section) section.classList.remove("hidden");
+        } else {
+          if (section) section.classList.add("hidden");
         }
+      }
 
-        // Button listeners
-        if (elements.browseBtn) {
-          elements.browseBtn.addEventListener("click", function (e) {
-            e.stopPropagation();
-            if (!isProcessing && elements.fileInput) {
-              elements.fileInput.click();
-            }
-          });
-        }
+      function createVariableItem(item, type) {
+        var div = document.createElement("div");
+        div.className = "variable-item";
 
-        if (elements.uploadArea) {
-          elements.uploadArea.addEventListener("click", function (e) {
-            if (
-              e.target === elements.browseBtn ||
-              (elements.browseBtn && elements.browseBtn.contains(e.target))
-            ) {
-              return;
-            }
-            if (!isProcessing && elements.fileInput) {
-              elements.fileInput.click();
-            }
-          });
-        }
+        // Variable name
+        var nameDiv = document.createElement("div");
+        nameDiv.className = "variable-name";
+        nameDiv.textContent = item.variableName;
 
-        // Form listeners
-        if (elements.librarySelect) {
-          elements.librarySelect.addEventListener("change", validateForm);
-        }
+        // Variable references
+        var referencesDiv = document.createElement("div");
+        referencesDiv.className = "variable-references";
 
-        if (elements.existingRadio) {
-          elements.existingRadio.addEventListener(
-            "change",
-            handleCollectionTypeChange
-          );
-        }
+        // Light mode reference
+        var lightRef = document.createElement("div");
+        lightRef.className = "reference-item";
+        lightRef.innerHTML =
+          '<span class="reference-label">Light:</span>' +
+          '<span class="reference-value">' +
+          item.lightReference +
+          "</span>";
 
-        if (elements.newRadio) {
-          elements.newRadio.addEventListener(
-            "change",
-            handleCollectionTypeChange
-          );
-        }
+        // Dark mode reference
+        var darkRef = document.createElement("div");
+        darkRef.className = "reference-item";
+        darkRef.innerHTML =
+          '<span class="reference-label">Dark:</span>' +
+          '<span class="reference-value">' +
+          item.darkReference +
+          "</span>";
 
-        if (elements.existingCollectionSelect) {
-          elements.existingCollectionSelect.addEventListener(
-            "change",
-            validateForm
-          );
-        }
+        referencesDiv.appendChild(lightRef);
+        referencesDiv.appendChild(darkRef);
 
-        if (elements.newCollectionInput) {
-          elements.newCollectionInput.addEventListener("input", validateForm);
-        }
-
-        // Action button listeners
-        if (elements.cancelBtn) {
-          elements.cancelBtn.addEventListener("click", resetToUpload);
-        }
-
-        if (elements.uploadNewBtn) {
-          elements.uploadNewBtn.addEventListener("click", resetToUpload);
-        }
-
-        if (elements.retryBtn) {
-          elements.retryBtn.addEventListener("click", resetToUpload);
-        }
-
-        if (elements.applyBtn) {
-          elements.applyBtn.addEventListener("click", createVariables);
-        }
-
-        if (elements.closeBtn) {
-          elements.closeBtn.addEventListener("click", function () {
-            parent.postMessage(
-              {
-                pluginMessage: { type: "close-plugin" },
-              },
-              "*"
-            );
-          });
-        }
-
-        // Radio option click handlers
-        var existingOption = document.getElementById("existing-option");
-        var newOption = document.getElementById("new-option");
-
-        if (existingOption) {
-          existingOption.addEventListener("click", function () {
-            elements.existingRadio.checked = true;
-            elements.newRadio.checked = false;
-            handleCollectionTypeChange();
-          });
-        }
-
-        if (newOption) {
-          newOption.addEventListener("click", function () {
-            elements.newRadio.checked = true;
-            elements.existingRadio.checked = false;
-            handleCollectionTypeChange();
-          });
-        }
-
-        // Add accordion functionality to result groups
-        var resultGroups = document.getElementsByClassName("result-group");
-        for (var i = 0; i < resultGroups.length; i++) {
-          var group = resultGroups[i];
-          var title = group.querySelector(".result-title");
-          if (title) {
-            title.addEventListener("click", function () {
-              var parentGroup = this.parentNode;
-              parentGroup.classList.toggle("collapsed");
-            });
-            // Start collapsed
-            group.classList.add("collapsed");
+        // For results, show which source variables were used
+        if (type === "created" || type === "updated") {
+          if (item.lightSourceVar) {
+            lightRef.innerHTML =
+              '<span class="reference-label">Light:</span>' +
+              '<span class="reference-value">' +
+              item.lightSourceVar +
+              "</span>";
+          }
+          if (item.darkSourceVar) {
+            darkRef.innerHTML =
+              '<span class="reference-label">Dark:</span>' +
+              '<span class="reference-value">' +
+              item.darkSourceVar +
+              "</span>";
           }
         }
 
-        // Message handler
-        window.onmessage = handleMessage;
+        // For failed items, show error
+        if (type === "failed" && item.error) {
+          var errorDiv = document.createElement("div");
+          errorDiv.className = "error-text";
+          errorDiv.textContent = "Error: " + item.error;
+          referencesDiv.appendChild(errorDiv);
+        }
 
-        // Initialize collection type display
-        handleCollectionTypeChange();
+        div.appendChild(nameDiv);
+        div.appendChild(referencesDiv);
 
-        console.log("Event listeners attached");
-      });
+        return div;
+      }
 
-      console.log("Script loaded");
+      function displayError(message) {
+        console.error("Plugin error:", message);
+        document.getElementById("error-message").textContent = message;
+      }
     </script>
   </body>
 </html>
