@@ -21,6 +21,7 @@ console.log("✅ UI shown");
 
 // Track if collections have been loaded
 var collectionsLoaded = false;
+var uploadedJsonData = null;
 
 // ===== MAIN MESSAGE HANDLER =====
 figma.ui.onmessage = function (msg) {
@@ -36,6 +37,13 @@ figma.ui.onmessage = function (msg) {
       break;
 
     case "create-variables":
+      uploadedJsonData = msg.jsonData || null;
+      console.log(
+        "JSON data received:",
+        uploadedJsonData
+          ? "Yes (" + Object.keys(uploadedJsonData).length + " variables)"
+          : "No"
+      );
       createVariablesFromCSS(
         msg.variablesToCreate,
         msg.selectedSourceCollectionId,
@@ -46,11 +54,14 @@ figma.ui.onmessage = function (msg) {
       break;
 
     case "close-plugin":
-      figma.closePlugin();
+      cleanupImportedVariables().then(function () {
+        figma.closePlugin();
+      });
       break;
 
     default:
       console.error("Unknown message type:", msg.type);
+      cleanupImportedVariables();
   }
 };
 
@@ -77,20 +88,126 @@ function createCollectionInfo(collection, variables, type, error) {
 
 // ===== PROCESS LIBRARY COLLECTION =====
 function processLibraryCollection(collection) {
+  console.log("Processing library collection:", {
+    name: collection.name,
+    key: collection.key,
+    id: collection.id,
+    libraryName: collection.libraryName,
+  });
+
+  // Track imported variables for cleanup
+  var importedVariableIds = [];
+
+  // First get all variables from the library
   return figma.teamLibrary
     .getVariablesInLibraryCollectionAsync(collection.key)
     .then(function (variables) {
-      var collectionInfo = createCollectionInfo(
-        collection,
-        variables,
-        "library"
-      );
+      console.log("Initial library variables:", {
+        total: variables.length,
+        collectionName: collection.name,
+      });
 
-      return collectionInfo;
+      // Try importing all variables to see if we get more
+      var importPromises = variables.map(function (variable) {
+        return figma.variables
+          .importVariableByKeyAsync(variable.key)
+          .then(function (imported) {
+            if (imported && imported.id) {
+              importedVariableIds.push(imported.id);
+            }
+            return {
+              original: variable,
+              imported: imported,
+            };
+          })
+          .catch(function (error) {
+            console.warn("Failed to import variable:", variable.name, error);
+            return {
+              original: variable,
+              error: error,
+            };
+          });
+      });
+
+      return Promise.all(importPromises).then(function (results) {
+        var successfulImports = results.filter(function (r) {
+          return r.imported;
+        });
+
+        console.log("Import results:", {
+          totalAttempted: results.length,
+          successfulImports: successfulImports.length,
+          failedImports: results.length - successfulImports.length,
+          importedIds: importedVariableIds,
+        });
+
+        // Get all imported variables directly using their IDs
+        var importedVars = importedVariableIds
+          .map(function (id) {
+            return figma.variables.getVariableById(id);
+          })
+          .filter(function (v) {
+            return v !== null;
+          });
+
+        console.log("Variables after import:", {
+          total: importedVars.length,
+          colorVars: importedVars.filter(function (v) {
+            return v.name.indexOf("color/") === 0;
+          }).length,
+          blackVars: importedVars
+            .filter(function (v) {
+              return v.name.indexOf("color/black") === 0;
+            })
+            .map(function (v) {
+              return v.name;
+            }),
+        });
+
+        // Store imported IDs for cleanup
+        figma.clientStorage
+          .setAsync("importedVariableIds", importedVariableIds)
+          .catch(function (error) {
+            console.warn("Failed to store imported IDs:", error);
+          });
+
+        var collectionInfo = createCollectionInfo(
+          collection,
+          importedVars,
+          "library"
+        );
+
+        return collectionInfo;
+      });
     })
     .catch(function (error) {
       console.error("❌ Error loading library " + collection.name + ":", error);
       return createCollectionInfo(collection, null, "library", error.message);
+    });
+}
+
+// ===== CLEANUP IMPORTED VARIABLES =====
+function cleanupImportedVariables() {
+  return figma.clientStorage
+    .getAsync("importedVariableIds")
+    .then(function (ids) {
+      if (!ids || !ids.length) {
+        return;
+      }
+
+      console.log("Cleaning up imported variables:", ids.length);
+
+      ids.forEach(function (id) {
+        var variable = figma.variables.getVariableById(id);
+        if (variable) {
+          variable.remove();
+        }
+      });
+
+      return figma.clientStorage.setAsync("importedVariableIds", []);
+    })
+    .catch(function (error) {
+      console.warn("Cleanup error:", error);
     });
 }
 
@@ -403,6 +520,16 @@ function createVariablesFromCSS(
   existingCollectionId
 ) {
   try {
+    console.log("🚀 Starting variable creation process...");
+    console.log("Initial parameters:", {
+      variablesToCreate: variablesToCreate.length,
+      selectedSourceCollectionId: selectedSourceCollectionId,
+      sourceCollectionType: sourceCollectionType,
+      collectionChoice: collectionChoice,
+      existingCollectionId: existingCollectionId,
+      hasJsonData: uploadedJsonData ? "Yes" : "No",
+    });
+
     // Initial context log
     var variablesList = [];
     for (var i = 0; i < variablesToCreate.length; i++) {
@@ -414,11 +541,14 @@ function createVariablesFromCSS(
       });
     }
 
-    console.log("Variable Creation Context:", {
+    console.log("📊 Variable Creation Context:", {
       totalVariables: variablesToCreate.length,
       sourceId: selectedSourceCollectionId,
       sourceType: sourceCollectionType,
       targetId: existingCollectionId,
+      hasJsonData: uploadedJsonData
+        ? "Yes (" + Object.keys(uploadedJsonData).length + " variables)"
+        : "No",
       variables: variablesList,
     });
 
@@ -428,9 +558,14 @@ function createVariablesFromCSS(
 
     // Get collections from our loaded data
     if (collectionsLoaded) {
+      console.log("🔍 Collections are loaded, proceeding with lookup...");
+
       // Find source collection
       var allCollections = figma.variables.getLocalVariableCollections();
+      console.log("📚 Found local collections:", allCollections.length);
+
       var localCollections = allCollections.map(function (collection) {
+        console.log("Processing local collection:", collection.name);
         var variables = figma.variables
           .getLocalVariables()
           .filter(function (v) {
@@ -440,15 +575,22 @@ function createVariablesFromCSS(
       });
 
       // Get library collections
+      console.log("🌐 Loading library collections...");
       figma.teamLibrary
         .getAvailableLibraryVariableCollectionsAsync()
         .then(function (libraryCollections) {
+          console.log(
+            "📚 Found library collections:",
+            libraryCollections.length
+          );
           return Promise.all(libraryCollections.map(processLibraryCollection));
         })
         .then(function (libraryInfo) {
+          console.log("✅ Library collections processed");
           var validLibraries = libraryInfo.filter(function (lib) {
             return lib !== null;
           });
+          console.log("✅ Valid libraries:", validLibraries.length);
           var allCollections = validLibraries.concat(localCollections);
 
           // Find our collections
@@ -457,6 +599,13 @@ function createVariablesFromCSS(
           });
           targetCollection = localCollections.find(function (c) {
             return c.id === existingCollectionId;
+          });
+
+          console.log("🎯 Collection lookup results:", {
+            sourceFound: !!sourceCollection,
+            targetFound: !!targetCollection,
+            sourceId: selectedSourceCollectionId,
+            targetId: existingCollectionId,
           });
 
           if (!sourceCollection || !targetCollection) {
@@ -468,7 +617,7 @@ function createVariablesFromCSS(
           }
 
           // Log collection details
-          console.log("Collections:", {
+          console.log("📊 Collections found:", {
             source: {
               id: sourceCollection.id,
               type: sourceCollection.type,
@@ -485,6 +634,7 @@ function createVariablesFromCSS(
             },
           });
 
+          console.log("🚀 Starting variable processing...");
           // Process variables with full context
           processVariables(
             variablesToCreate,
@@ -498,7 +648,7 @@ function createVariablesFromCSS(
           );
         })
         .catch(function (error) {
-          console.error("Collection Loading Error:", {
+          console.error("❌ Collection Loading Error:", {
             error: error.message,
             stack: error.stack,
             context: {
@@ -513,10 +663,11 @@ function createVariablesFromCSS(
           });
         });
     } else {
+      console.error("❌ Collections not loaded!");
       throw new Error("Collections not loaded. Please refresh and try again.");
     }
   } catch (error) {
-    console.error("Variable Creation Error:", {
+    console.error("❌ Variable Creation Error:", {
       error: error.message,
       stack: error.stack,
       context: {
@@ -545,20 +696,25 @@ function processVariables(
   failed
 ) {
   try {
+    console.log("🎯 Starting processVariables...");
     // Get or create target collection
     var figmaTargetCollection = figma.variables.getVariableCollectionById(
       targetCollection.figmaId || targetCollection.id
     );
+
     if (!figmaTargetCollection) {
+      console.error("❌ Target collection not found in Figma");
       throw new Error("Target collection not found in Figma");
     }
+    console.log("✅ Found target collection:", figmaTargetCollection.name);
 
     // Setup modes
+    console.log("🎨 Setting up collection modes...");
     var modes = setupCollectionModes(figmaTargetCollection);
     var lightModeId = modes.lightModeId;
     var darkModeId = modes.darkModeId;
 
-    console.log("Mode Configuration:", {
+    console.log("✅ Mode Configuration:", {
       light: lightModeId,
       dark: darkModeId,
       collection: figmaTargetCollection.name,
@@ -574,73 +730,79 @@ function processVariables(
       }
     }
 
-    console.log("Existing Variables:", {
+    console.log("📊 Existing Variables:", {
       count: Object.keys(existingVariables).length,
-      variables: Object.keys(existingVariables),
+      names: Object.keys(existingVariables),
     });
 
     // Load source variables based on type
     if (sourceCollectionType === "library") {
-      // Load library variables
-      figma.teamLibrary
-        .getVariablesInLibraryCollectionAsync(sourceCollection.id)
-        .then(function (libraryVariables) {
-          var libVarList = [];
-          for (var i = 0; i < libraryVariables.length; i++) {
-            libVarList.push({
-              name: libraryVariables[i].name,
-              key: libraryVariables[i].key,
+      if (uploadedJsonData) {
+        console.log("🚀 Using JSON data for variable lookup");
+        console.log("JSON data size:", Object.keys(uploadedJsonData).length);
+        processLibraryVariablesWithJson(
+          variablesToCreate,
+          uploadedJsonData,
+          figmaTargetCollection,
+          existingVariables,
+          lightModeId,
+          darkModeId,
+          created,
+          updated,
+          failed
+        );
+      } else {
+        console.log("🐌 Using standard method for variable lookup");
+        figma.teamLibrary
+          .getVariablesInLibraryCollectionAsync(sourceCollection.id)
+          .then(function (libraryVariables) {
+            var libVarList = [];
+            for (var i = 0; i < libraryVariables.length; i++) {
+              libVarList.push({
+                name: libraryVariables[i].name,
+                key: libraryVariables[i].key,
+              });
+            }
+
+            console.log("Library Variables:", {
+              count: libraryVariables.length,
+              variables: libVarList,
+              sourceKey: sourceCollection.id,
             });
-          }
 
-          console.log("Library Variables:", {
-            count: libraryVariables.length,
-            variables: libVarList,
-          });
+            // Create variable map
+            var sourceVariableMap = {};
+            for (var i = 0; i < libraryVariables.length; i++) {
+              sourceVariableMap[libraryVariables[i].name] = libraryVariables[i];
+            }
 
-          // Add this right after the console.log for "Library Variables:" around line 420
-          console.log("=== DETAILED LIBRARY VARIABLES ===");
-          for (var i = 0; i < libraryVariables.length; i++) {
-            var v = libraryVariables[i];
-            console.log("Variable " + i + ":", {
-              name: v.name,
-              key: v.key,
-              // Add any other properties you want to see
+            // Process with loaded variables
+            processLibraryVariables(
+              variablesToCreate,
+              sourceVariableMap,
+              figmaTargetCollection,
+              existingVariables,
+              lightModeId,
+              darkModeId,
+              created,
+              updated,
+              failed
+            );
+          })
+          .catch(function (error) {
+            console.error("Library Variable Loading Error:", {
+              error: error.message,
+              stack: error.stack,
+              context: {
+                sourceCollection: sourceCollection.id,
+                variableCount: variablesToCreate.length,
+              },
             });
-          }
-          console.log("=== END LIBRARY VARIABLES ===");
-
-          // Create variable map
-          var sourceVariableMap = {};
-          for (var i = 0; i < libraryVariables.length; i++) {
-            sourceVariableMap[libraryVariables[i].name] = libraryVariables[i];
-          }
-
-          // Process with loaded variables
-          processLibraryVariables(
-            variablesToCreate,
-            sourceVariableMap,
-            figmaTargetCollection,
-            existingVariables,
-            lightModeId,
-            darkModeId,
-            created,
-            updated,
-            failed
-          );
-        })
-        .catch(function (error) {
-          console.error("Library Variable Loading Error:", {
-            error: error.message,
-            stack: error.stack,
-            context: {
-              sourceCollection: sourceCollection.id,
-              variableCount: variablesToCreate.length,
-            },
+            throw error;
           });
-          throw error;
-        });
+      }
     } else {
+      console.log("📝 Processing local variables...");
       // Load local variables
       var sourceVariables = figma.variables
         .getLocalVariables()
@@ -683,7 +845,7 @@ function processVariables(
       sendResults(created, updated, failed, variablesToCreate.length);
     }
   } catch (error) {
-    console.error("Variable Processing Error:", {
+    console.error("❌ Variable Processing Error:", {
       error: error.message,
       stack: error.stack,
       context: {
@@ -823,6 +985,371 @@ function processLocalVariables(
   }
 }
 
+// ===== PROCESS LIBRARY VARIABLES WITH JSON =====
+function processLibraryVariablesWithJson(
+  variablesToCreate,
+  jsonData,
+  targetCollection,
+  existingVariables,
+  lightModeId,
+  darkModeId,
+  created,
+  updated,
+  failed
+) {
+  console.log("🔄 Starting JSON-based variable processing:", {
+    toCreate: variablesToCreate.length,
+    jsonVars: Object.keys(jsonData).length,
+    targetCollection: targetCollection.name,
+    existingVars: Object.keys(existingVariables).length,
+    lightMode: lightModeId,
+    darkMode: darkModeId,
+  });
+
+  // Log first few variables to be created for debugging
+  console.log(
+    "📝 First few variables to create:",
+    variablesToCreate.slice(0, 3).map(function (v) {
+      return {
+        name: v.variableName,
+        light: v.lightReference,
+        dark: v.darkReference,
+      };
+    })
+  );
+
+  // Log first few JSON entries for debugging
+  var firstFewJsonKeys = Object.keys(jsonData).slice(0, 3);
+  var firstFewEntries = {};
+  for (var k = 0; k < firstFewJsonKeys.length; k++) {
+    var key = firstFewJsonKeys[k];
+    firstFewEntries[key] = jsonData[key];
+  }
+  console.log("🔍 First few JSON entries:", firstFewEntries);
+
+  var promises = [];
+  var processedCount = 0;
+  var startTime = Date.now();
+
+  // Create a promise for each variable
+  for (var i = 0; i < variablesToCreate.length; i++) {
+    var item = variablesToCreate[i];
+    console.log(
+      "📝 Processing variable " +
+        (i + 1) +
+        "/" +
+        variablesToCreate.length +
+        ":",
+      item.variableName
+    );
+
+    var promise = processLibraryVariableWithJson(
+      item,
+      jsonData,
+      targetCollection,
+      existingVariables,
+      lightModeId,
+      darkModeId,
+      created,
+      updated,
+      failed
+    ).then(function () {
+      processedCount++;
+      if (processedCount % 10 === 0) {
+        var elapsed = (Date.now() - startTime) / 1000;
+        var rate = processedCount / elapsed;
+        console.log(
+          "✅ Progress: " +
+            processedCount +
+            "/" +
+            variablesToCreate.length +
+            " variables (" +
+            rate.toFixed(1) +
+            " vars/sec)"
+        );
+      }
+    });
+
+    promises.push(promise);
+  }
+
+  // Wait for all imports to complete
+  Promise.all(promises)
+    .then(function () {
+      var totalTime = (Date.now() - startTime) / 1000;
+      console.log("✅ All JSON-based library imports completed:", {
+        total: variablesToCreate.length,
+        created: created.length,
+        updated: updated.length,
+        failed: failed.length,
+        timeSeconds: totalTime.toFixed(1),
+        ratePerSecond: (variablesToCreate.length / totalTime).toFixed(1),
+      });
+      sendResults(created, updated, failed, variablesToCreate.length);
+    })
+    .catch(function (error) {
+      console.error("❌ JSON Library Import Error:", {
+        error: error.message,
+        stack: error.stack,
+        processed: processedCount,
+        total: variablesToCreate.length,
+        timeSeconds: ((Date.now() - startTime) / 1000).toFixed(1),
+      });
+      sendResults(created, updated, failed, variablesToCreate.length);
+    });
+}
+
+function processLibraryVariableWithJson(
+  item,
+  jsonData,
+  targetCollection,
+  existingVariables,
+  lightModeId,
+  darkModeId,
+  created,
+  updated,
+  failed
+) {
+  return new Promise(function (resolve) {
+    try {
+      console.log("🔍 Looking up variable:", {
+        name: item.variableName,
+        light: item.lightReference,
+        dark: item.darkReference,
+      });
+
+      // Find variable keys in JSON data
+      var lightKey = findVariableKeyInJson(jsonData, item.lightReference);
+      var darkKey = findVariableKeyInJson(jsonData, item.darkReference);
+
+      if (!lightKey || !darkKey) {
+        console.warn("⚠️ Key not found:", {
+          variable: item.variableName,
+          lightFound: !!lightKey,
+          darkFound: !!darkKey,
+        });
+
+        failed.push({
+          variableName: item.variableName,
+          lightReference: item.lightReference,
+          darkReference: item.darkReference,
+          error: !lightKey
+            ? "Variable key not found in uploaded JSON file for light reference"
+            : "Variable key not found in uploaded JSON file for dark reference",
+        });
+        resolve();
+        return;
+      }
+
+      console.log("✅ Found keys:", {
+        variable: item.variableName,
+        light: lightKey,
+        dark: darkKey,
+      });
+
+      // Get or create target variable
+      var targetVariable = existingVariables[item.variableName];
+      var wasUpdated = !!targetVariable;
+
+      if (!targetVariable) {
+        console.log("➕ Creating new variable:", item.variableName);
+        targetVariable = figma.variables.createVariable(
+          item.variableName,
+          targetCollection,
+          "COLOR"
+        );
+        existingVariables[item.variableName] = targetVariable;
+      } else {
+        console.log("🔄 Updating existing variable:", item.variableName);
+      }
+
+      // Import library variables using keys from JSON
+      console.log("🔄 Importing library variables...");
+      var lightPromise = figma.variables.importVariableByKeyAsync(lightKey);
+      var darkPromise =
+        lightKey === darkKey
+          ? lightPromise
+          : figma.variables.importVariableByKeyAsync(darkKey);
+
+      Promise.all([lightPromise, darkPromise])
+        .then(function (imported) {
+          var importedLight = imported[0];
+          var importedDark = imported[1];
+
+          console.log("✅ Variables imported:", {
+            variable: item.variableName,
+            light: importedLight.name,
+            dark: importedDark.name,
+          });
+
+          // Create aliases
+          var lightAlias = figma.variables.createVariableAlias(importedLight);
+          var darkAlias = figma.variables.createVariableAlias(importedDark);
+
+          // Set values for modes
+          targetVariable.setValueForMode(lightModeId, lightAlias);
+          targetVariable.setValueForMode(darkModeId, darkAlias);
+
+          // Record result
+          var result = {
+            variableName: item.variableName,
+            lightReference: item.lightReference,
+            darkReference: item.darkReference,
+            lightSourceVar: importedLight.name,
+            darkSourceVar: importedDark.name,
+          };
+
+          if (wasUpdated) {
+            updated.push(result);
+          } else {
+            created.push(result);
+          }
+
+          console.log("✅ Variable processed successfully:", item.variableName);
+          resolve();
+        })
+        .catch(function (error) {
+          console.error("❌ Import failed:", {
+            variable: item.variableName,
+            error: error.message,
+          });
+
+          failed.push({
+            variableName: item.variableName,
+            lightReference: item.lightReference,
+            darkReference: item.darkReference,
+            error: "Import failed: " + error.message,
+          });
+          resolve();
+        });
+    } catch (error) {
+      console.error("❌ Processing error:", {
+        variable: item.variableName,
+        error: error.message,
+      });
+
+      failed.push({
+        variableName: item.variableName,
+        lightReference: item.lightReference,
+        darkReference: item.darkReference,
+        error: error.message,
+      });
+      resolve();
+    }
+  });
+}
+
+// ===== FIND VARIABLE KEY IN JSON DATA =====
+function findVariableKeyInJson(jsonData, variableName) {
+  console.log("🔍 Looking for variable key in JSON:", {
+    name: variableName,
+    totalJsonVars: Object.keys(jsonData).length,
+    firstFewKeys: Object.keys(jsonData).slice(0, 3),
+  });
+
+  // Normalize by removing _100 suffix if present
+  var normalizedName = variableName.replace(/_100$/, "");
+  console.log("📝 Normalized name:", normalizedName);
+
+  // Handle stepless colors (like black and white) that don't have number steps
+  if (isSteplessColor(normalizedName)) {
+    console.log("⚪ Handling stepless color:", normalizedName);
+
+    // Check if someone is trying to use a step with black/white
+    var parts = normalizedName.split("/");
+    if (parts.length > 2) {
+      console.warn("⚠️ Invalid stepless color pattern detected:", {
+        original: normalizedName,
+        parts: parts,
+      });
+      console.warn(
+        'Colors "black" and "white" should be used without steps, e.g. "color/black" instead of "' +
+          normalizedName +
+          '"'
+      );
+    }
+
+    // Ensure we have the simple color/name format
+    var simplePath = "color/" + normalizedName.split("/").pop();
+    console.log("🔄 Trying simplified path:", simplePath);
+
+    if (jsonData[simplePath]) {
+      console.log("✅ Found stepless color key:", {
+        path: simplePath,
+        key: jsonData[simplePath].key,
+      });
+      return jsonData[simplePath].key;
+    }
+  }
+
+  // Try exact match first
+  if (jsonData[normalizedName]) {
+    console.log("✅ Found exact match key:", {
+      name: normalizedName,
+      key: jsonData[normalizedName].key,
+    });
+    return jsonData[normalizedName].key;
+  }
+
+  // Try with/without color prefix
+  var withPrefix = "color/" + normalizedName.replace(/^color\//, "");
+  var withoutPrefix = normalizedName.replace(/^color\//, "");
+
+  console.log("🔍 Trying alternative paths:", {
+    withPrefix: withPrefix,
+    withoutPrefix: withoutPrefix,
+  });
+
+  if (jsonData[withPrefix]) {
+    console.log("✅ Found prefixed key:", {
+      path: withPrefix,
+      key: jsonData[withPrefix].key,
+    });
+    return jsonData[withPrefix].key;
+  }
+
+  if (jsonData[withoutPrefix]) {
+    console.log("✅ Found unprefixed key:", {
+      path: withoutPrefix,
+      key: jsonData[withoutPrefix].key,
+    });
+    return jsonData[withoutPrefix].key;
+  }
+
+  console.log("❌ No key found for variable:", variableName);
+  return null;
+}
+
+// Helper function to check if a color is stepless (black or white)
+function isSteplessColor(name) {
+  var colorName = name.split("/").pop().toLowerCase();
+  return colorName === "black" || colorName === "white";
+}
+
+// ===== SEND RESULTS =====
+function sendResults(created, updated, failed, totalVariables) {
+  console.log("Variable Creation Results:", {
+    created: created.length,
+    updated: updated.length,
+    failed: failed.length,
+    total: totalVariables,
+  });
+
+  figma.ui.postMessage({
+    type: "creation-complete",
+    success: failed.length === 0,
+    message:
+      failed.length === 0
+        ? "Variables created successfully"
+        : "Variable creation failed",
+    results: {
+      created: created,
+      updated: updated,
+      failed: failed,
+    },
+  });
+}
+
 // ===== PROCESS LIBRARY VARIABLES =====
 function processLibraryVariables(
   variablesToCreate,
@@ -835,32 +1362,58 @@ function processLibraryVariables(
   updated,
   failed
 ) {
-  console.log("Processing Variables:", {
+  console.log("Processing Library Variables:", {
     total: variablesToCreate.length,
     type: "library",
   });
 
-  var promises = [];
+  var importPromises = [];
 
-  // Create a promise for each variable
   for (var i = 0; i < variablesToCreate.length; i++) {
     var item = variablesToCreate[i];
-    var promise = processLibraryVariable(
-      item,
-      sourceVariableMap,
-      targetCollection,
-      existingVariables,
-      lightModeId,
-      darkModeId,
-      created,
-      updated,
-      failed
-    );
-    promises.push(promise);
+
+    try {
+      // Find source variables
+      var lightSourceVar = sourceVariableMap[item.lightReference];
+      var darkSourceVar = sourceVariableMap[item.darkReference];
+
+      if (!lightSourceVar || !darkSourceVar) {
+        failed.push({
+          variableName: item.variableName,
+          lightReference: item.lightReference,
+          darkReference: item.darkReference,
+          error:
+            (!lightSourceVar ? "Light" : "Dark") + " source variable not found",
+        });
+        continue;
+      }
+
+      // Create promise for importing variables
+      var promise = importLibraryVariables(
+        item,
+        lightSourceVar,
+        darkSourceVar,
+        targetCollection,
+        existingVariables,
+        lightModeId,
+        darkModeId,
+        created,
+        updated,
+        failed
+      );
+      importPromises.push(promise);
+    } catch (error) {
+      failed.push({
+        variableName: item.variableName,
+        lightReference: item.lightReference,
+        darkReference: item.darkReference,
+        error: error.message,
+      });
+    }
   }
 
   // Wait for all imports to complete
-  Promise.all(promises)
+  Promise.all(importPromises)
     .then(function () {
       console.log("Library imports completed");
       sendResults(created, updated, failed, variablesToCreate.length);
@@ -874,10 +1427,11 @@ function processLibraryVariables(
     });
 }
 
-// ===== PROCESS SINGLE LIBRARY VARIABLE =====
-function processLibraryVariable(
+// ===== IMPORT LIBRARY VARIABLES =====
+function importLibraryVariables(
   item,
-  sourceVariableMap,
+  lightSourceVar,
+  darkSourceVar,
   targetCollection,
   existingVariables,
   lightModeId,
@@ -888,28 +1442,6 @@ function processLibraryVariable(
 ) {
   return new Promise(function (resolve) {
     try {
-      // Find source variables
-      var lightSourceVar = findSourceVariable(
-        sourceVariableMap,
-        item.lightReference
-      );
-      var darkSourceVar = findSourceVariable(
-        sourceVariableMap,
-        item.darkReference
-      );
-
-      if (!lightSourceVar || !darkSourceVar) {
-        failed.push({
-          variableName: item.variableName,
-          lightReference: item.lightReference,
-          darkReference: item.darkReference,
-          error:
-            (!lightSourceVar ? "Light" : "Dark") + " source variable not found",
-        });
-        resolve();
-        return;
-      }
-
       // Get or create target variable
       var targetVariable = existingVariables[item.variableName];
       var wasUpdated = !!targetVariable;
@@ -923,7 +1455,7 @@ function processLibraryVariable(
         existingVariables[item.variableName] = targetVariable;
       }
 
-      // Import library variables
+      // Import light and dark variables
       var lightPromise = figma.variables.importVariableByKeyAsync(
         lightSourceVar.key
       );
@@ -950,8 +1482,8 @@ function processLibraryVariable(
             variableName: item.variableName,
             lightReference: item.lightReference,
             darkReference: item.darkReference,
-            lightSourceVar: lightSourceVar.name,
-            darkSourceVar: darkSourceVar.name,
+            lightSourceVar: importedLight.name,
+            darkSourceVar: importedDark.name,
           };
 
           if (wasUpdated) {
@@ -985,9 +1517,6 @@ function processLibraryVariable(
 
 // ===== FIND SOURCE VARIABLE =====
 function findSourceVariable(sourceVariableMap, variableName) {
-  // Normalize by removing _100 suffix if present
-  variableName = variableName.replace(/_100$/, "");
-
   // Try exact match first
   if (sourceVariableMap[variableName]) {
     return sourceVariableMap[variableName];
@@ -997,95 +1526,21 @@ function findSourceVariable(sourceVariableMap, variableName) {
   var withPrefix = "color/" + variableName.replace(/^color\//, "");
   var withoutPrefix = variableName.replace(/^color\//, "");
 
-  return (
-    sourceVariableMap[withPrefix] || sourceVariableMap[withoutPrefix] || null
-  );
+  if (sourceVariableMap[withPrefix]) {
+    return sourceVariableMap[withPrefix];
+  }
+
+  if (sourceVariableMap[withoutPrefix]) {
+    return sourceVariableMap[withoutPrefix];
+  }
+
+  // Handle stepless colors (black/white)
+  if (isSteplessColor(variableName)) {
+    var simplePath = "color/" + variableName.split("/").pop();
+    if (sourceVariableMap[simplePath]) {
+      return sourceVariableMap[simplePath];
+    }
+  }
+
+  return null;
 }
-
-// ===== SEND RESULTS TO UI =====
-function sendResults(created, updated, failed, total) {
-  // Log the summary in a concise format
-  console.log(
-    "Results Summary:",
-    total +
-      " total\n✅ " +
-      created.length +
-      " created + 🔄 " +
-      updated.length +
-      " updated + ⚠️ " +
-      failed.length +
-      " failed"
-  );
-
-  // Prepare detailed results
-  var createdList = [];
-  var updatedList = [];
-  var failedList = [];
-
-  for (var i = 0; i < created.length; i++) {
-    var item = created[i];
-    createdList.push({
-      name: item.variableName,
-      light: {
-        reference: item.lightReference,
-        source: item.lightSourceVar,
-      },
-      dark: {
-        reference: item.darkReference,
-        source: item.darkSourceVar,
-      },
-    });
-  }
-
-  for (var i = 0; i < updated.length; i++) {
-    var item = updated[i];
-    updatedList.push({
-      name: item.variableName,
-      light: {
-        reference: item.lightReference,
-        source: item.lightSourceVar,
-      },
-      dark: {
-        reference: item.darkReference,
-        source: item.darkSourceVar,
-      },
-    });
-  }
-
-  for (var i = 0; i < failed.length; i++) {
-    var item = failed[i];
-    failedList.push({
-      name: item.variableName,
-      error: item.error,
-      context: {
-        light: item.lightReference,
-        dark: item.darkReference,
-      },
-    });
-  }
-
-  // Log the detailed results
-  console.log("Results Details:", {
-    created: createdList,
-    updated: updatedList,
-    failed: failedList,
-  });
-
-  figma.ui.postMessage({
-    type: "creation-complete",
-    success: true,
-    results: {
-      created: created,
-      updated: updated,
-      failed: failed,
-      summary: {
-        created: created.length,
-        updated: updated.length,
-        failed: failed.length,
-        total: total,
-      },
-    },
-  });
-}
-
-// Load collections on startup - REMOVED to prevent duplicate logs

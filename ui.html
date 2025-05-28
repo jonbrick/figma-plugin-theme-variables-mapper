@@ -359,6 +359,28 @@
         }
       }
 
+      /* Large collection warning */
+      .large-collection-warning {
+        background: hsl(var(--warning) / 0.1);
+        border: 1px solid hsl(var(--warning) / 0.3);
+        border-radius: var(--radius);
+        padding: 12px 16px;
+        margin-bottom: 16px;
+      }
+
+      .large-collection-warning h4 {
+        font-size: 13px;
+        font-weight: 600;
+        color: hsl(var(--warning));
+        margin-bottom: 4px;
+      }
+
+      .large-collection-warning p {
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+        line-height: 1.4;
+      }
+
       /* Buttons */
       .btn {
         display: inline-flex;
@@ -805,6 +827,61 @@
         </div>
       </div>
 
+      <div id="json-upload-section" class="section hidden">
+        <div class="selected-collections-info">
+          <h3>📋 Selected Collections</h3>
+          <div class="selected-collections-grid">
+            <div class="selected-collection">
+              <span class="selected-label">Source:</span>
+              <span id="json-selected-source" class="selected-value"></span>
+            </div>
+            <div class="selected-collection">
+              <span class="selected-label">Target:</span>
+              <span id="json-selected-target" class="selected-value"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="large-collection-warning">
+          <h4>⚡ Large Collection Detected</h4>
+          <p>
+            Your source collection has
+            <span id="collection-size-display">500+</span> variables. For
+            optimal performance, upload a JSON export of your variable
+            collection.
+          </p>
+        </div>
+
+        <div class="upload-area" id="json-upload-area">
+          <div class="upload-content">
+            <div class="upload-icon">📄</div>
+            <h3>Upload Variables JSON (Optional)</h3>
+            <p>
+              Export your Figma variables collection as JSON for faster
+              processing
+            </p>
+            <input type="file" id="json-file-input" accept=".json" hidden />
+            <button id="json-browse-btn" class="btn btn-primary">
+              Choose JSON File
+            </button>
+          </div>
+        </div>
+        <div class="supported-formats">
+          <small
+            >Supported: .json files exported from Figma variable
+            collections</small
+          >
+        </div>
+        <div class="actions">
+          <button id="json-skip-btn" class="btn btn-secondary">
+            Skip (Use Standard Method)
+          </button>
+          <button id="json-continue-btn" class="btn btn-primary" disabled>
+            Continue to Preview
+          </button>
+        </div>
+      </div>
+
       <div id="loading-section" class="section hidden">
         <div class="loading">
           <div class="loader"></div>
@@ -916,12 +993,19 @@
       var availableCollections = [];
       var libraryCollections = [];
       var localCollections = [];
+      var selectedSourceCollection = null;
+      var uploadedJsonData = null;
 
       document.addEventListener("DOMContentLoaded", function () {
         var elements = {
           fileInput: document.getElementById("file-input"),
           browseBtn: document.getElementById("browse-btn"),
           uploadArea: document.getElementById("upload-area"),
+          jsonFileInput: document.getElementById("json-file-input"),
+          jsonBrowseBtn: document.getElementById("json-browse-btn"),
+          jsonUploadArea: document.getElementById("json-upload-area"),
+          jsonSkipBtn: document.getElementById("json-skip-btn"),
+          jsonContinueBtn: document.getElementById("json-continue-btn"),
           sourceCollectionSelect: document.getElementById(
             "source-collection-select"
           ),
@@ -939,17 +1023,30 @@
           selectedInfo: document.getElementById("selected-info"),
           selectedSource: document.getElementById("selected-source"),
           selectedTarget: document.getElementById("selected-target"),
+          jsonSelectedSource: document.getElementById("json-selected-source"),
+          jsonSelectedTarget: document.getElementById("json-selected-target"),
+          collectionSizeDisplay: document.getElementById(
+            "collection-size-display"
+          ),
           refreshCollectionsBtn: document.getElementById(
             "refresh-collections-btn"
           ),
         };
 
-        // File input listener
+        // File input listeners
         if (elements.fileInput) {
           elements.fileInput.addEventListener("change", function (event) {
             if (isProcessing) return;
             var file = event.target.files[0];
             if (file) processFile(file);
+          });
+        }
+
+        if (elements.jsonFileInput) {
+          elements.jsonFileInput.addEventListener("change", function (event) {
+            if (isProcessing) return;
+            var file = event.target.files[0];
+            if (file) processJsonFile(file);
           });
         }
 
@@ -961,6 +1058,14 @@
           });
         }
 
+        if (elements.jsonBrowseBtn) {
+          elements.jsonBrowseBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            if (!isProcessing && elements.jsonFileInput)
+              elements.jsonFileInput.click();
+          });
+        }
+
         if (elements.uploadArea) {
           elements.uploadArea.addEventListener("click", function (e) {
             if (
@@ -969,6 +1074,19 @@
             )
               return;
             if (!isProcessing && elements.fileInput) elements.fileInput.click();
+          });
+        }
+
+        if (elements.jsonUploadArea) {
+          elements.jsonUploadArea.addEventListener("click", function (e) {
+            if (
+              e.target === elements.jsonBrowseBtn ||
+              (elements.jsonBrowseBtn &&
+                elements.jsonBrowseBtn.contains(e.target))
+            )
+              return;
+            if (!isProcessing && elements.jsonFileInput)
+              elements.jsonFileInput.click();
           });
         }
 
@@ -996,6 +1114,22 @@
         if (elements.backBtn) {
           elements.backBtn.addEventListener("click", function () {
             showSection("collection-section");
+          });
+        }
+
+        if (elements.jsonSkipBtn) {
+          elements.jsonSkipBtn.addEventListener("click", function () {
+            uploadedJsonData = null;
+            showSection("preview-section");
+          });
+        }
+
+        if (elements.jsonContinueBtn) {
+          elements.jsonContinueBtn.addEventListener("click", function () {
+            if (currentResults) {
+              displayPreview(currentResults);
+            }
+            showSection("preview-section");
           });
         }
 
@@ -1093,8 +1227,17 @@
               isProcessing = false;
               if (success) {
                 currentResults = results;
-                displayPreview(currentResults);
-                showSection("preview-section");
+
+                // Check if we need JSON upload
+                if (
+                  selectedSourceCollection &&
+                  selectedSourceCollection.variableCount >= 500
+                ) {
+                  showJsonUploadSection();
+                } else {
+                  displayPreview(currentResults);
+                  showSection("preview-section");
+                }
               } else {
                 displayError(message);
                 showSection("error-section");
@@ -1118,6 +1261,13 @@
           var source = elements.sourceCollectionSelect.value;
           var target = elements.targetCollectionSelect.value;
           elements.previewBtn.disabled = !(source && target);
+
+          // Store selected source collection for size checking
+          if (source) {
+            selectedSourceCollection = availableCollections.find(function (c) {
+              return c.id === source;
+            });
+          }
         }
 
         function updateSelectedInfo() {
@@ -1131,10 +1281,28 @@
             return c.id === sourceOption.value;
           });
 
-          elements.selectedSource.innerHTML = sourceCollection
+          var displayName = sourceCollection
             ? sourceCollection.displayName
             : sourceOption.text;
-          elements.selectedTarget.innerHTML = targetOption.text;
+          var targetName = targetOption.text;
+
+          elements.selectedSource.innerHTML = displayName;
+          elements.selectedTarget.innerHTML = targetName;
+
+          // Also update JSON section
+          elements.jsonSelectedSource.innerHTML = displayName;
+          elements.jsonSelectedTarget.innerHTML = targetName;
+        }
+
+        function showJsonUploadSection() {
+          // Update collection size display
+          elements.collectionSizeDisplay.innerHTML =
+            selectedSourceCollection.variableCount;
+
+          // Update selected collections info
+          updateSelectedInfo();
+
+          showSection("json-upload-section");
         }
 
         function populateCollections(libs, locals) {
@@ -1173,7 +1341,10 @@
           }
 
           // Default to first library and first local
-          if (libs.length > 0) sourceSel.value = libs[0].id;
+          if (libs.length > 0) {
+            sourceSel.value = libs[0].id;
+            selectedSourceCollection = libs[0];
+          }
           if (locals.length > 0) targetSel.value = locals[0].id;
           updatePreviewButton();
         }
@@ -1225,6 +1396,50 @@
         reader.readAsText(file);
       }
 
+      function processJsonFile(file) {
+        if (isProcessing) return;
+
+        if (!file.name.endsWith(".json")) {
+          displayError("Please upload a JSON file (.json extension required).");
+          return;
+        }
+
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          try {
+            uploadedJsonData = JSON.parse(e.target.result);
+            console.log(
+              "JSON data loaded:",
+              Object.keys(uploadedJsonData).length + " variables"
+            );
+
+            // Enable continue button
+            var continueBtn = document.getElementById("json-continue-btn");
+            if (continueBtn) {
+              continueBtn.disabled = false;
+              continueBtn.innerHTML =
+                "Continue to Preview (" +
+                Object.keys(uploadedJsonData).length +
+                " variables loaded)";
+            }
+          } catch (error) {
+            console.error("JSON parse error:", error);
+            displayError(
+              "Invalid JSON file. Please check the format and try again."
+            );
+            uploadedJsonData = null;
+          }
+        };
+
+        reader.onerror = function () {
+          console.error("JSON file read error");
+          displayError("Error reading JSON file. Please try again.");
+          uploadedJsonData = null;
+        };
+
+        reader.readAsText(file);
+      }
+
       function loadCollections() {
         document.getElementById("loading-text").textContent =
           "Loading collections...";
@@ -1254,6 +1469,7 @@
               sourceCollectionType: sourceCollectionType,
               collectionChoice: collectionChoice,
               existingCollectionId: existingCollectionId,
+              jsonData: uploadedJsonData, // Pass JSON data to plugin
             },
           },
           "*"
@@ -1331,6 +1547,7 @@
         var sections = [
           "collection-section",
           "upload-section",
+          "json-upload-section",
           "loading-section",
           "preview-section",
           "results-section",
@@ -1348,6 +1565,8 @@
         isProcessing = false;
         currentResults = null;
         availableCollections = [];
+        selectedSourceCollection = null;
+        uploadedJsonData = null;
         document.getElementById("loading-text").textContent =
           "Parsing CSS file...";
 
@@ -1365,9 +1584,18 @@
         targetCollectionSelect.innerHTML =
           '<option value="">Choose target collection...</option>';
 
+        // Reset JSON continue button
+        var continueBtn = document.getElementById("json-continue-btn");
+        if (continueBtn) {
+          continueBtn.disabled = true;
+          continueBtn.innerHTML = "Continue to Preview";
+        }
+
         showSection("collection-section");
         var fileInput = document.getElementById("file-input");
         if (fileInput) fileInput.value = "";
+        var jsonFileInput = document.getElementById("json-file-input");
+        if (jsonFileInput) jsonFileInput.value = "";
       }
 
       function displayPreview(results) {
@@ -1403,14 +1631,16 @@
       }
 
       function displayCreationResults(results) {
-        document.getElementById("created-count").textContent =
-          results.summary.created || 0;
-        document.getElementById("updated-count").textContent =
-          results.summary.updated || 0;
-        document.getElementById("removed-count").textContent =
-          results.summary.removed || 0;
-        document.getElementById("failed-count").textContent =
-          results.summary.failed || 0;
+        document.getElementById("created-count").textContent = results.created
+          ? results.created.length
+          : 0;
+        document.getElementById("updated-count").textContent = results.updated
+          ? results.updated.length
+          : 0;
+        document.getElementById("removed-count").textContent = 0; // Or handle if you plan to send 'removed'
+        document.getElementById("failed-count").textContent = results.failed
+          ? results.failed.length
+          : 0;
 
         populateVariableList(
           "results-created",
@@ -1425,9 +1655,9 @@
           "updated"
         );
         populateVariableList(
-          "results-removed",
+          "results-removed", // This section might remain hidden if not used
           "results-removed-list",
-          results.removed || [],
+          [], // No 'removed' data is currently sent
           "removed"
         );
         populateVariableList(
