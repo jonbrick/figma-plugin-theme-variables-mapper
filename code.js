@@ -225,6 +225,12 @@ function parseCSSContent(cssContent) {
 // ===== EXTRACT THEME VARIABLES FROM CSS =====
 function extractThemeVariables(cssContent) {
   var themeVariables = [];
+  var variableMap = {
+    fill: {},
+    stroke: {},
+    a11y: {},
+    symbol: {},
+  };
 
   try {
     // Find @theme block
@@ -278,18 +284,41 @@ function extractThemeVariables(cssContent) {
         var lightRef = convertCSSVariableToFigmaName(lightVars[varName]);
         var darkRef = convertCSSVariableToFigmaName(darkVars[varName]);
 
-        themeVariables.push({
+        var variable = {
           variableName: finalVarName,
           cssVariable: varName,
           lightReference: lightRef,
           darkReference: darkRef,
           lightCSSRef: lightVars[varName],
           darkCSSRef: darkVars[varName],
-        });
+        };
 
-        console.log(
-          "📍 " + finalVarName + " → Light: " + lightRef + ", Dark: " + darkRef
-        );
+        themeVariables.push(variable);
+
+        // Store in categorized map
+        var category = finalVarName.split("/")[1]; // fill, stroke, a11y, or symbol
+        if (!variableMap[category]) {
+          variableMap[category] = {};
+        }
+        variableMap[category][finalVarName] = variable;
+      }
+    }
+
+    // Log summary of categorized variables
+    console.log("\n📊 Theme Variables:");
+
+    for (var category in variableMap) {
+      var variables = variableMap[category];
+      var count = Object.keys(variables).length;
+      if (count > 0) {
+        console.log("\n" + category + " (" + count + "):");
+        for (var varName in variables) {
+          var v = variables[varName];
+          var output = {};
+          output.light = v.lightReference;
+          output.dark = v.darkReference;
+          console.log("  " + v.variableName + ":", output);
+        }
       }
     }
   } catch (error) {
