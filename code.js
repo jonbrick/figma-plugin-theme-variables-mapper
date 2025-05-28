@@ -54,48 +54,67 @@ figma.ui.onmessage = function (msg) {
   }
 };
 
+// ===== CREATE COLLECTION INFO OBJECT =====
+function createCollectionInfo(collection, variables, type, error) {
+  return {
+    id: collection.key || collection.id,
+    displayName:
+      type === "library"
+        ? collection.libraryName + " → " + collection.name
+        : collection.name + " (Local)",
+    libraryName: collection.libraryName || "Unknown Library",
+    collectionName: collection.name,
+    variableCount: variables ? variables.length : 0,
+    type: type,
+    modeCount:
+      collection.modes && collection.modes.length ? collection.modes.length : 1,
+    lastModified: collection.lastModified || null,
+    description: collection.description || "",
+    error: error || null,
+  };
+}
+
+// ===== PROCESS LIBRARY COLLECTION =====
+function processLibraryCollection(collection) {
+  return figma.teamLibrary
+    .getVariablesInLibraryCollectionAsync(collection.key)
+    .then(function (variables) {
+      var collectionInfo = createCollectionInfo(
+        collection,
+        variables,
+        "library"
+      );
+
+      return collectionInfo;
+    })
+    .catch(function (error) {
+      console.error("❌ Error loading library " + collection.name + ":", error);
+      return createCollectionInfo(collection, null, "library", error.message);
+    });
+}
+
 // ===== LOAD COLLECTIONS =====
 function loadCollections() {
   try {
-    console.log("📚 Loading all collections...");
+    console.log("📨 Loading collections...");
 
     // Get local collections synchronously
     var localCollections = figma.variables.getLocalVariableCollections();
-    var localInfo = [];
-
-    // Process local collections
-    for (var i = 0; i < localCollections.length; i++) {
-      var collection = localCollections[i];
+    var localInfo = localCollections.map(function (collection) {
       var variables = figma.variables.getLocalVariables().filter(function (v) {
         return v.variableCollectionId === collection.id;
       });
-
-      localInfo.push({
-        id: collection.id,
-        name: collection.name + " (Local)",
-        variableCount: variables.length,
-        modeCount: collection.modes.length,
-        type: "local",
-      });
-    }
-
-    console.log("✅ Found " + localInfo.length + " local collections");
+      return createCollectionInfo(collection, variables, "local");
+    });
 
     // Load library collections asynchronously
     figma.teamLibrary
       .getAvailableLibraryVariableCollectionsAsync()
       .then(function (libraryCollections) {
-        console.log(
-          "📚 Found " + libraryCollections.length + " library collections"
-        );
-
         // Process each library collection
-        var libraryPromises = [];
-
-        for (var i = 0; i < libraryCollections.length; i++) {
-          var collection = libraryCollections[i];
-          libraryPromises.push(processLibraryCollection(collection));
-        }
+        var libraryPromises = libraryCollections.map(function (collection) {
+          return processLibraryCollection(collection);
+        });
 
         // Wait for all library processing to complete
         return Promise.all(libraryPromises);
@@ -106,11 +125,49 @@ function loadCollections() {
           return lib !== null;
         });
 
-        console.log(
-          "✅ Successfully loaded " +
-            validLibraries.length +
-            " library collections"
-        );
+        // Log detailed collection information
+        console.log("📊 Collections:", {
+          libraries: validLibraries.map(function (c) {
+            return {
+              id: c.id,
+              displayName: c.displayName,
+              libraryName: c.libraryName,
+              collectionName: c.collectionName,
+              variables: c.variableCount,
+              modes: c.modeCount,
+              type: c.type,
+              lastModified: c.lastModified,
+              description: c.description,
+              error: c.error,
+            };
+          }),
+          local: localInfo.map(function (c) {
+            return {
+              id: c.id,
+              name: c.displayName,
+              collectionName: c.collectionName,
+              variables: c.variableCount,
+              modes: c.modeCount,
+              type: c.type,
+              lastModified: c.lastModified,
+              description: c.description,
+            };
+          }),
+        });
+
+        // Log summary counts
+        console.log("📈 Summary:", {
+          libraries: validLibraries.length,
+          local: localInfo.length,
+          total: validLibraries.length + localInfo.length,
+          totalVariables:
+            validLibraries.reduce(function (sum, c) {
+              return sum + c.variableCount;
+            }, 0) +
+            localInfo.reduce(function (sum, c) {
+              return sum + c.variableCount;
+            }, 0),
+        });
 
         // Combine all collections
         var allCollections = validLibraries.concat(localInfo);
@@ -145,34 +202,6 @@ function loadCollections() {
       message: "Error loading collections: " + error.message,
     });
   }
-}
-
-// ===== PROCESS LIBRARY COLLECTION =====
-function processLibraryCollection(collection) {
-  return figma.teamLibrary
-    .getVariablesInLibraryCollectionAsync(collection.key)
-    .then(function (variables) {
-      return {
-        id: collection.key,
-        name: collection.libraryName + " → " + collection.name,
-        variableCount: variables.length,
-        type: "library",
-        libraryName: collection.libraryName,
-        collectionName: collection.name,
-      };
-    })
-    .catch(function (error) {
-      console.error("❌ Error loading library " + collection.name + ":", error);
-      return {
-        id: collection.key,
-        name: collection.libraryName + " → " + collection.name,
-        variableCount: 0,
-        type: "library",
-        libraryName: collection.libraryName,
-        collectionName: collection.name,
-        error: error.message,
-      };
-    });
 }
 
 // ===== PARSE CSS CONTENT =====
@@ -233,7 +262,7 @@ function extractThemeVariables(cssContent) {
   };
 
   // Log initial state
-  console.log("📊 Initial variableMap:", JSON.stringify(variableMap, null, 2));
+  console.log("📊 Initial variableMap:", variableMap);
 
   try {
     // Find @theme block
@@ -387,24 +416,74 @@ function createVariablesFromCSS(
   existingCollectionId
 ) {
   try {
-    console.log("🚀 Starting variable creation process...");
+    console.log("\n🚀 Starting variable creation process...");
     console.log("📋 Variables to create: " + variablesToCreate.length);
-    console.log(
-      "📚 Source collection: " +
-        selectedSourceCollectionId +
-        " (" +
-        sourceCollectionType +
-        ")"
-    );
-    console.log(
-      "🎯 Target collection: " +
-        (collectionChoice === "new" ? "New Collection" : existingCollectionId)
-    );
+
+    // Get target collection name (this is always local so we can get it synchronously)
+    var targetCollection =
+      figma.variables.getVariableCollectionById(existingCollectionId);
+    var targetName = targetCollection ? targetCollection.name : "Unknown";
+
+    // Log initial info
+    console.log("📚 Source collection:", {
+      id: selectedSourceCollectionId,
+      type: sourceCollectionType,
+      name: sourceCollection
+        ? sourceCollection.type === "library"
+          ? sourceCollection.displayName
+          : sourceCollection.name
+        : "Unknown",
+    });
+    console.log("🎯 Target collection:", {
+      id: existingCollectionId,
+      name: targetCollection ? targetCollection.name : "Unknown",
+    });
 
     // Initialize result arrays
     var created = [];
     var updated = [];
     var failed = [];
+
+    // Get source collection name
+    var sourceName = "";
+    if (sourceCollectionType === "library") {
+      // For library collections, we need to load it first
+      figma.teamLibrary
+        .getAvailableLibraryVariableCollectionsAsync()
+        .then(function (collections) {
+          var sourceCollection = collections.find(function (c) {
+            return c.key === selectedSourceCollectionId;
+          });
+          sourceName = sourceCollection
+            ? sourceCollection.libraryName + " → " + sourceCollection.name
+            : "Unknown";
+        })
+        .catch(function () {
+          sourceName = "Unknown Library";
+        });
+    } else {
+      // For local collections, we can get it directly
+      var sourceCollection = figma.variables.getVariableCollectionById(
+        selectedSourceCollectionId
+      );
+      sourceName = sourceCollection ? sourceCollection.name : "Unknown";
+    }
+
+    console.log(
+      "📚 Source collection: " +
+        selectedSourceCollectionId +
+        " (" +
+        sourceCollectionType +
+        ")" +
+        "\n   Name: " +
+        sourceName
+    );
+    console.log(
+      "🎯 Target collection: " +
+        existingCollectionId +
+        "\n   Name: " +
+        targetName
+    );
 
     // Load source variables based on type
     if (sourceCollectionType === "library") {
@@ -413,7 +492,12 @@ function createVariablesFromCSS(
         .getVariablesInLibraryCollectionAsync(selectedSourceCollectionId)
         .then(function (libraryVariables) {
           console.log(
-            "📚 Loaded " + libraryVariables.length + " library variables"
+            "📚 Loaded " +
+              libraryVariables.length +
+              " library variables from: " +
+              (libraryVariables.length > 0
+                ? libraryVariables[0].libraryName
+                : "Unknown Library")
           );
 
           // Convert to map for easy lookup
@@ -445,13 +529,6 @@ function createVariablesFromCSS(
         });
     } else {
       // Load local variables synchronously
-      var sourceCollection = figma.variables.getVariableCollectionById(
-        selectedSourceCollectionId
-      );
-      if (!sourceCollection) {
-        throw new Error("Source collection not found");
-      }
-
       var allLocalVariables = figma.variables.getLocalVariables();
       var sourceVariables = allLocalVariables.filter(function (v) {
         return v.variableCollectionId === selectedSourceCollectionId;

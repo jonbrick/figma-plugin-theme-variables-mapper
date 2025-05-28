@@ -741,7 +741,7 @@
         <div class="collection-grid">
           <div class="collection-card">
             <div class="collection-card-header">
-              <div class="collection-icon">🎯</div>
+              <div class="collection-icon">🏠</div>
               <div class="collection-title">
                 <h3>Source Collection</h3>
                 <p>Library with design tokens to reference</p>
@@ -754,7 +754,7 @@
 
           <div class="collection-card">
             <div class="collection-card-header">
-              <div class="collection-icon">📁</div>
+              <div class="collection-icon">🎯</div>
               <div class="collection-title">
                 <h3>Target Collection</h3>
                 <p>Local collection to create variables in</p>
@@ -1123,12 +1123,18 @@
         function updateSelectedInfo() {
           var sourceIdx = elements.sourceCollectionSelect.selectedIndex;
           var targetIdx = elements.targetCollectionSelect.selectedIndex;
-          var sourceText =
-            elements.sourceCollectionSelect.options[sourceIdx].text;
-          var targetText =
-            elements.targetCollectionSelect.options[targetIdx].text;
-          elements.selectedSource.innerHTML = sourceText;
-          elements.selectedTarget.innerHTML = targetText;
+          var sourceOption = elements.sourceCollectionSelect.options[sourceIdx];
+          var targetOption = elements.targetCollectionSelect.options[targetIdx];
+
+          // Find the original collection objects
+          var sourceCollection = availableCollections.find(function (c) {
+            return c.id === sourceOption.value;
+          });
+
+          elements.selectedSource.innerHTML = sourceCollection
+            ? sourceCollection.displayName
+            : sourceOption.text;
+          elements.selectedTarget.innerHTML = targetOption.text;
         }
 
         function populateCollections(libs, locals) {
@@ -1138,18 +1144,34 @@
           var targetSel = elements.targetCollectionSelect;
           sourceSel.innerHTML = "";
           targetSel.innerHTML = "";
+
+          // Add default options
+          sourceSel.innerHTML =
+            '<option value="">Choose source collection...</option>';
+          targetSel.innerHTML =
+            '<option value="">Choose target collection...</option>';
+
+          // Add library collections to source
           for (var i = 0; i < libs.length; i++) {
             var opt = document.createElement("option");
             opt.value = libs[i].id;
-            opt.text = libs[i].name;
+            opt.text =
+              libs[i].displayName ||
+              libs[i].libraryName + " → " + libs[i].collectionName;
             sourceSel.appendChild(opt);
           }
+
+          // Add local collections to target
           for (var j = 0; j < locals.length; j++) {
             var opt2 = document.createElement("option");
             opt2.value = locals[j].id;
-            opt2.text = locals[j].name;
+            // Remove "(Local)" suffix if present since it's redundant in the target dropdown
+            opt2.text = locals[j].displayName
+              ? locals[j].displayName.replace(" (Local)", "")
+              : locals[j].collectionName;
             targetSel.appendChild(opt2);
           }
+
           // Default to first library and first local
           if (libs.length > 0) sourceSel.value = libs[0].id;
           if (locals.length > 0) targetSel.value = locals[0].id;
@@ -1283,20 +1305,22 @@
       }
 
       function createCollectionItem(collection) {
-        var icon = collection.type === "library" ? "📚" : "📁";
-        var modeText = collection.modeCount
-          ? " • " + collection.modeCount + " modes"
-          : "";
-
         var html = '<div class="library-item">';
         html += '<div class="library-main">';
-        html += '<div class="library-name">' + collection.name + "</div>";
+        html +=
+          '<div class="library-name">' +
+          (collection.type === "library"
+            ? collection.displayName
+            : collection.displayName || collection.collectionName) +
+          "</div>";
         html += "</div>";
         html +=
           '<div class="library-stats">' +
           collection.variableCount +
           " vars" +
-          modeText +
+          (collection.modeCount
+            ? " • " + collection.modeCount + " modes"
+            : "") +
           "</div>";
         html += "</div>";
 
