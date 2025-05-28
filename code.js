@@ -222,7 +222,7 @@ function parseCSSContent(cssContent) {
   }
 }
 
-// ===== EXTRACT THEME VARIABLES FROM CSS =====
+// ===== EXTRACT @THEME VARIABLES FROM CSS =====
 function extractThemeVariables(cssContent) {
   var themeVariables = [];
   var variableMap = {
@@ -231,6 +231,9 @@ function extractThemeVariables(cssContent) {
     a11y: {},
     symbol: {},
   };
+
+  // Log initial state
+  console.log("📊 Initial variableMap:", JSON.stringify(variableMap, null, 2));
 
   try {
     // Find @theme block
@@ -284,13 +287,33 @@ function extractThemeVariables(cssContent) {
         var lightRef = convertCSSVariableToFigmaName(lightVars[varName]);
         var darkRef = convertCSSVariableToFigmaName(darkVars[varName]);
 
+        // Find original theme mapping string
+        var themeMapping = themeMatch[1].split(";").find(function (line) {
+          return (
+            line
+              .trim()
+              .indexOf(
+                "--color-" +
+                  finalVarName.replace(/color\//g, "").replace(/\//g, "-")
+              ) === 0
+          );
+        });
+
+        // Find original mode value strings
+        var lightValue = lightMatch[1].split(";").find(function (line) {
+          return line.trim().indexOf("--" + varName + ":") === 0;
+        });
+        var darkValue = darkMatch[1].split(";").find(function (line) {
+          return line.trim().indexOf("--" + varName + ":") === 0;
+        });
+
         var variable = {
+          themeMapping: themeMapping ? themeMapping.trim() : "",
+          lightValue: lightValue ? lightValue.trim() : "",
+          darkValue: darkValue ? darkValue.trim() : "",
           variableName: finalVarName,
-          cssVariable: varName,
           lightReference: lightRef,
           darkReference: darkRef,
-          lightCSSRef: lightVars[varName],
-          darkCSSRef: darkVars[varName],
         };
 
         themeVariables.push(variable);
@@ -304,23 +327,8 @@ function extractThemeVariables(cssContent) {
       }
     }
 
-    // Log summary of categorized variables
-    console.log("\n📊 Theme Variables:");
-
-    for (var category in variableMap) {
-      var variables = variableMap[category];
-      var count = Object.keys(variables).length;
-      if (count > 0) {
-        console.log("\n" + category + " (" + count + "):");
-        for (var varName in variables) {
-          var v = variables[varName];
-          var output = {};
-          output.light = v.lightReference;
-          output.dark = v.darkReference;
-          console.log("  " + v.variableName + ":", output);
-        }
-      }
-    }
+    // Log final state with categorized theme variables
+    console.log("📊 Theme Variables by Category:", variableMap);
   } catch (error) {
     console.error("❌ Error extracting theme variables:", error);
   }
@@ -379,7 +387,7 @@ function createVariablesFromCSS(
   existingCollectionId
 ) {
   try {
-    console.log("\n🚀 Starting variable creation process...");
+    console.log("🚀 Starting variable creation process...");
     console.log("📋 Variables to create: " + variablesToCreate.length);
     console.log(
       "📚 Source collection: " +
@@ -624,7 +632,7 @@ function processLocalVariables(
     var item = variablesToCreate[i];
 
     try {
-      console.log("\n🔄 Processing: " + item.variableName);
+      console.log("🔄 Processing: " + item.variableName);
 
       // Find source variables
       var lightSourceVar = findSourceVariable(
@@ -753,7 +761,7 @@ function processLibraryVariable(
 ) {
   return new Promise(function (resolve) {
     try {
-      console.log("\n🔄 Processing: " + item.variableName);
+      console.log("🔄 Processing: " + item.variableName);
 
       // Find source variables
       var lightSourceVar = findSourceVariable(
@@ -875,13 +883,13 @@ function findSourceVariable(sourceVariableMap, variableName) {
 
 // ===== SEND RESULTS TO UI =====
 function sendResults(created, updated, failed, total) {
-  console.log("\n📊 === FINAL RESULTS ===");
+  console.log("📊 === FINAL RESULTS ===");
   console.log("✅ Created: " + created.length);
   console.log("✏️ Updated: " + updated.length);
   console.log("❌ Failed: " + failed.length);
 
   if (failed.length > 0) {
-    console.log("\n❌ Failed variables:");
+    console.log("❌ Failed variables:");
     for (var i = 0; i < failed.length; i++) {
       console.log("  - " + failed[i].variableName + ": " + failed[i].error);
     }
