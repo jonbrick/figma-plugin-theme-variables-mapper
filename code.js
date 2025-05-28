@@ -57,7 +57,8 @@ figma.ui.onmessage = function (msg) {
 // ===== CREATE COLLECTION INFO OBJECT =====
 function createCollectionInfo(collection, variables, type, error) {
   return {
-    id: collection.key || collection.id,
+    id: type === "library" ? collection.key : collection.id,
+    figmaId: collection.id,
     displayName:
       type === "library"
         ? collection.libraryName + " → " + collection.name
@@ -153,20 +154,6 @@ function loadCollections() {
               description: c.description,
             };
           }),
-        });
-
-        // Log summary counts
-        console.log("📈 Summary:", {
-          libraries: validLibraries.length,
-          local: localInfo.length,
-          total: validLibraries.length + localInfo.length,
-          totalVariables:
-            validLibraries.reduce(function (sum, c) {
-              return sum + c.variableCount;
-            }, 0) +
-            localInfo.reduce(function (sum, c) {
-              return sum + c.variableCount;
-            }, 0),
         });
 
         // Combine all collections
@@ -419,141 +406,90 @@ function createVariablesFromCSS(
     console.log("\n🚀 Starting variable creation process...");
     console.log("📋 Variables to create: " + variablesToCreate.length);
 
-    // Get target collection name (this is always local so we can get it synchronously)
-    var targetCollection =
-      figma.variables.getVariableCollectionById(existingCollectionId);
-    var targetName = targetCollection ? targetCollection.name : "Unknown";
+    // Find source collection from our loaded data
+    var sourceCollection = null;
+    var targetCollection = null;
 
-    // Log initial info
-    console.log("📚 Source collection:", {
-      id: selectedSourceCollectionId,
-      type: sourceCollectionType,
-      name: sourceCollection
-        ? sourceCollection.type === "library"
-          ? sourceCollection.displayName
-          : sourceCollection.name
-        : "Unknown",
-    });
-    console.log("🎯 Target collection:", {
-      id: existingCollectionId,
-      name: targetCollection ? targetCollection.name : "Unknown",
-    });
+    // Get collections from our loaded data
+    if (collectionsLoaded) {
+      // Find source collection
+      var allCollections = figma.variables.getLocalVariableCollections();
+      var localCollections = allCollections.map(function (collection) {
+        var variables = figma.variables
+          .getLocalVariables()
+          .filter(function (v) {
+            return v.variableCollectionId === collection.id;
+          });
+        return createCollectionInfo(collection, variables, "local");
+      });
 
-    // Initialize result arrays
-    var created = [];
-    var updated = [];
-    var failed = [];
-
-    // Get source collection name
-    var sourceName = "";
-    if (sourceCollectionType === "library") {
-      // For library collections, we need to load it first
+      // Get library collections
       figma.teamLibrary
         .getAvailableLibraryVariableCollectionsAsync()
-        .then(function (collections) {
-          var sourceCollection = collections.find(function (c) {
-            return c.key === selectedSourceCollectionId;
-          });
-          sourceName = sourceCollection
-            ? sourceCollection.libraryName + " → " + sourceCollection.name
-            : "Unknown";
+        .then(function (libraryCollections) {
+          return Promise.all(libraryCollections.map(processLibraryCollection));
         })
-        .catch(function () {
-          sourceName = "Unknown Library";
-        });
-    } else {
-      // For local collections, we can get it directly
-      var sourceCollection = figma.variables.getVariableCollectionById(
-        selectedSourceCollectionId
-      );
-      sourceName = sourceCollection ? sourceCollection.name : "Unknown";
-    }
+        .then(function (libraryInfo) {
+          var validLibraries = libraryInfo.filter(function (lib) {
+            return lib !== null;
+          });
+          var allCollections = validLibraries.concat(localCollections);
 
-    console.log(
-      "📚 Source collection: " +
-        selectedSourceCollectionId +
-        " (" +
-        sourceCollectionType +
-        ")" +
-        "\n   Name: " +
-        sourceName
-    );
-    console.log(
-      "🎯 Target collection: " +
-        existingCollectionId +
-        "\n   Name: " +
-        targetName
-    );
+          // Find our collections
+          sourceCollection = allCollections.find(function (c) {
+            return c.id === selectedSourceCollectionId;
+          });
+          targetCollection = localCollections.find(function (c) {
+            return c.id === existingCollectionId;
+          });
 
-    // Load source variables based on type
-    if (sourceCollectionType === "library") {
-      // Load library variables asynchronously
-      figma.teamLibrary
-        .getVariablesInLibraryCollectionAsync(selectedSourceCollectionId)
-        .then(function (libraryVariables) {
-          console.log(
-            "📚 Loaded " +
-              libraryVariables.length +
-              " library variables from: " +
-              (libraryVariables.length > 0
-                ? libraryVariables[0].libraryName
-                : "Unknown Library")
-          );
-
-          // Convert to map for easy lookup
-          var sourceVariableMap = {};
-          for (var i = 0; i < libraryVariables.length; i++) {
-            var variable = libraryVariables[i];
-            sourceVariableMap[variable.name] = variable;
+          if (!sourceCollection || !targetCollection) {
+            throw new Error(
+              !sourceCollection
+                ? "Source collection not found"
+                : "Target collection not found"
+            );
           }
 
-          // Process variables
+          // Log collection info
+          console.log("📚 Source collection:", {
+            id: sourceCollection.id,
+            type: sourceCollection.type,
+            name: sourceCollection.displayName,
+            variables: sourceCollection.variableCount,
+            modes: sourceCollection.modeCount,
+          });
+
+          console.log("🎯 Target collection:", {
+            id: targetCollection.id,
+            name:
+              targetCollection.displayName || targetCollection.collectionName,
+            variables: targetCollection.variableCount,
+            modes: targetCollection.modeCount,
+          });
+
+          // Process variables with full context
           processVariables(
             variablesToCreate,
-            sourceVariableMap,
+            sourceCollection,
+            targetCollection,
             sourceCollectionType,
             collectionChoice,
-            existingCollectionId,
-            created,
-            updated,
-            failed
+            [], // created
+            [], // updated
+            [] // failed
           );
         })
         .catch(function (error) {
-          console.error("❌ Failed to load library variables:", error);
+          console.error("❌ Error loading collections:", error);
           figma.ui.postMessage({
             type: "creation-complete",
             success: false,
-            message: "Error loading library variables: " + error.message,
+            message: error.message,
           });
         });
     } else {
-      // Load local variables synchronously
-      var allLocalVariables = figma.variables.getLocalVariables();
-      var sourceVariables = allLocalVariables.filter(function (v) {
-        return v.variableCollectionId === selectedSourceCollectionId;
-      });
-
-      console.log("📁 Loaded " + sourceVariables.length + " local variables");
-
-      // Convert to map
-      var sourceVariableMap = {};
-      for (var i = 0; i < sourceVariables.length; i++) {
-        var variable = sourceVariables[i];
-        sourceVariableMap[variable.name] = variable;
-      }
-
-      // Process variables
-      processVariables(
-        variablesToCreate,
-        sourceVariableMap,
-        sourceCollectionType,
-        collectionChoice,
-        existingCollectionId,
-        created,
-        updated,
-        failed
-      );
+      throw new Error("Collections not loaded. Please refresh and try again.");
     }
   } catch (error) {
     console.error("❌ Variable creation failed:", error);
@@ -568,32 +504,27 @@ function createVariablesFromCSS(
 // ===== PROCESS VARIABLES (MAIN LOGIC) =====
 function processVariables(
   variablesToCreate,
-  sourceVariableMap,
+  sourceCollection,
+  targetCollection,
   sourceCollectionType,
   collectionChoice,
-  existingCollectionId,
   created,
   updated,
   failed
 ) {
   try {
-    // Get or create target collection
-    var targetCollection;
-    if (collectionChoice === "new") {
-      targetCollection =
-        figma.variables.createVariableCollection("Theme Variables");
-      console.log("✅ Created new collection: Theme Variables");
-    } else {
-      targetCollection =
-        figma.variables.getVariableCollectionById(existingCollectionId);
-      if (!targetCollection) {
-        throw new Error("Target collection not found");
-      }
-      console.log("✅ Using existing collection: " + targetCollection.name);
+    // Get or create target collection using the preserved Figma ID
+    var figmaTargetCollection = figma.variables.getVariableCollectionById(
+      targetCollection.figmaId || targetCollection.id
+    );
+    if (!figmaTargetCollection) {
+      throw new Error("Target collection not found in Figma");
     }
 
+    console.log("✅ Using existing collection:", figmaTargetCollection.name);
+
     // Setup modes
-    var modes = setupCollectionModes(targetCollection);
+    var modes = setupCollectionModes(figmaTargetCollection);
     var lightModeId = modes.lightModeId;
     var darkModeId = modes.darkModeId;
 
@@ -606,7 +537,7 @@ function processVariables(
     var localVariables = figma.variables.getLocalVariables();
     for (var i = 0; i < localVariables.length; i++) {
       var v = localVariables[i];
-      if (v.variableCollectionId === targetCollection.id) {
+      if (v.variableCollectionId === figmaTargetCollection.id) {
         existingVariables[v.name] = v;
       }
     }
@@ -617,26 +548,60 @@ function processVariables(
         " existing variables in target"
     );
 
-    // Process each variable
+    // Load source variables based on type
     if (sourceCollectionType === "library") {
-      // For library sources, handle async imports
-      processLibraryVariables(
-        variablesToCreate,
-        sourceVariableMap,
-        targetCollection,
-        existingVariables,
-        lightModeId,
-        darkModeId,
-        created,
-        updated,
-        failed
-      );
+      // Load library variables
+      figma.teamLibrary
+        .getVariablesInLibraryCollectionAsync(sourceCollection.id)
+        .then(function (libraryVariables) {
+          console.log(
+            "📚 Loading " + libraryVariables.length + " library variables"
+          );
+
+          // Create variable map
+          var sourceVariableMap = {};
+          for (var i = 0; i < libraryVariables.length; i++) {
+            sourceVariableMap[libraryVariables[i].name] = libraryVariables[i];
+          }
+
+          // Process with loaded variables
+          processLibraryVariables(
+            variablesToCreate,
+            sourceVariableMap,
+            figmaTargetCollection,
+            existingVariables,
+            lightModeId,
+            darkModeId,
+            created,
+            updated,
+            failed
+          );
+        })
+        .catch(function (error) {
+          console.error("❌ Error loading library variables:", error);
+          throw error;
+        });
     } else {
-      // For local sources, process synchronously
+      // Load local variables
+      var sourceVariables = figma.variables
+        .getLocalVariables()
+        .filter(function (v) {
+          return v.variableCollectionId === sourceCollection.id;
+        });
+
+      console.log("📁 Loading " + sourceVariables.length + " local variables");
+
+      // Create variable map
+      var sourceVariableMap = {};
+      for (var i = 0; i < sourceVariables.length; i++) {
+        sourceVariableMap[sourceVariables[i].name] = sourceVariables[i];
+      }
+
+      // Process with loaded variables
       processLocalVariables(
         variablesToCreate,
         sourceVariableMap,
-        targetCollection,
+        figmaTargetCollection,
         existingVariables,
         lightModeId,
         darkModeId,
@@ -645,7 +610,6 @@ function processVariables(
         failed
       );
 
-      // Send results immediately for local processing
       sendResults(created, updated, failed, variablesToCreate.length);
     }
   } catch (error) {
@@ -653,7 +617,8 @@ function processVariables(
     figma.ui.postMessage({
       type: "creation-complete",
       success: false,
-      message: "Error processing variables: " + error.message,
+      message:
+        "Error processing variables: " + (error.message || "Unknown error"),
     });
   }
 }
