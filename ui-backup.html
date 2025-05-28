@@ -39,7 +39,7 @@
         line-height: 1.5;
         color: hsl(var(--foreground));
         background-color: hsl(var(--background));
-        padding: 16px;
+        padding: 20px;
       }
 
       #app {
@@ -53,7 +53,7 @@
         opacity: 1;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 16px;
       }
 
       .hidden {
@@ -63,14 +63,14 @@
       /* Header */
       .header {
         text-align: center;
-        padding: 12px 0;
+        padding: 16px 0;
         background: hsl(var(--background));
         border-radius: var(--radius);
-        margin-bottom: 16px;
+        margin-bottom: 8px;
       }
 
       .header h1 {
-        font-size: 20px;
+        font-size: 24px;
         font-weight: 700;
         color: hsl(var(--foreground));
         margin-bottom: 4px;
@@ -80,18 +80,18 @@
 
       .subtitle {
         color: hsl(var(--muted-foreground));
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 500;
         max-width: 320px;
         margin: 0 auto;
-        line-height: 1.3;
+        line-height: 1.4;
       }
 
       /* Upload area */
       .upload-area {
         border: 2px dashed hsl(var(--border));
         border-radius: calc(var(--radius) + 4px);
-        padding: 24px 20px;
+        padding: 48px 24px;
         text-align: center;
         background: hsl(var(--background));
         transition: all 0.2s ease;
@@ -104,34 +104,34 @@
       }
 
       .upload-content .upload-icon {
-        font-size: 32px;
-        margin-bottom: 8px;
+        font-size: 56px;
+        margin-bottom: 16px;
         opacity: 0.7;
       }
 
       .upload-content h3 {
-        font-size: 14px;
+        font-size: 18px;
         font-weight: 600;
-        margin-bottom: 4px;
+        margin-bottom: 8px;
         color: hsl(var(--foreground));
         line-height: 1.3;
       }
 
       .upload-content p {
         color: hsl(var(--muted-foreground));
-        margin-bottom: 12px;
-        font-size: 12px;
+        margin-bottom: 24px;
+        font-size: 14px;
         line-height: 1.4;
       }
 
       .supported-formats {
         text-align: center;
-        margin-top: 8px;
+        margin-top: 16px;
       }
 
       .supported-formats small {
         color: hsl(var(--muted-foreground));
-        font-size: 11px;
+        font-size: 12px;
       }
 
       /* Loading */
@@ -170,58 +170,33 @@
       }
 
       /* Library Info */
-      .collections-overview {
-        background: hsl(var(--muted) / 0.3);
+      .library-info {
+        background: hsl(var(--card));
         border: 1px solid hsl(var(--border));
         border-radius: var(--radius);
-        padding: 12px 16px;
-        margin-bottom: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
       }
 
-      .collections-overview h3 {
-        font-size: 13px;
+      .library-info h3 {
+        font-size: 14px;
         font-weight: 600;
-        margin-bottom: 0;
+        margin-bottom: 12px;
         color: hsl(var(--foreground));
       }
 
       .library-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 4px;
-        padding: 6px 8px;
-        background: hsl(var(--background));
+        margin-bottom: 8px;
+        padding: 8px;
+        background: hsl(var(--muted) / 0.3);
         border-radius: calc(var(--radius) - 2px);
-        border: 1px solid hsl(var(--border));
-      }
-
-      .library-item:last-child {
-        margin-bottom: 0;
-      }
-
-      .library-main {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex: 1;
-        min-width: 0;
       }
 
       .library-name {
         font-weight: 600;
-        font-size: 12px;
+        font-size: 13px;
         color: hsl(var(--foreground));
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .library-stats {
-        font-size: 10px;
-        color: hsl(var(--muted-foreground));
-        white-space: nowrap;
-        font-family: "SF Mono", "Menlo", "Monaco", "Courier New", monospace;
+        margin-bottom: 4px;
       }
 
       .collection-item {
@@ -230,132 +205,76 @@
         margin-left: 12px;
         font-family: "SF Mono", "Menlo", "Monaco", "Courier New", monospace;
       }
-
-      /* Collection grid */
-      .collection-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        margin-bottom: 12px;
-      }
-
-      .collection-card {
+      .collection-selector {
         background: hsl(var(--card));
         border: 1px solid hsl(var(--border));
         border-radius: var(--radius);
-        padding: 16px;
+        padding: 20px;
+        margin-bottom: 16px;
       }
 
-      .collection-card-header {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
+      .collection-selector h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: hsl(var(--foreground));
+      }
+
+      .collection-option {
         margin-bottom: 12px;
       }
 
-      .collection-icon {
-        font-size: 20px;
-        line-height: 1;
-        flex-shrink: 0;
-        margin-top: 1px;
-      }
-
-      .collection-title h3 {
-        font-size: 14px;
-        font-weight: 600;
+      .collection-option label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
         color: hsl(var(--foreground));
-        margin-bottom: 2px;
-        line-height: 1.2;
+        cursor: pointer;
       }
 
-      .collection-title p {
-        color: hsl(var(--muted-foreground));
-        font-size: 12px;
-        line-height: 1.3;
+      .collection-option input[type="radio"] {
         margin: 0;
       }
 
-      .collection-select {
+      .collection-option select {
         width: 100%;
-        padding: 10px 12px;
+        padding: 8px 12px;
         border: 1px solid hsl(var(--border));
         border-radius: var(--radius);
         background: hsl(var(--background));
         color: hsl(var(--foreground));
         font-size: 13px;
-        transition: all 0.2s ease;
+        margin-top: 8px;
       }
 
-      .collection-select:focus {
-        outline: none;
-        border-color: hsl(var(--primary));
-        box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
-      }
-
-      .collection-select:disabled {
+      .collection-option select:disabled {
         opacity: 0.5;
         pointer-events: none;
       }
-
-      /* Responsive collection grid */
-      @media (max-width: 600px) {
-        .collection-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      /* Selected collections info */
-      .selected-collections-info {
+      .library-selector {
         background: hsl(var(--card));
         border: 1px solid hsl(var(--border));
         border-radius: var(--radius);
-        padding: 12px 16px;
+        padding: 20px;
         margin-bottom: 16px;
       }
 
-      .selected-collections-info h3 {
-        font-size: 13px;
+      .library-selector h3 {
+        font-size: 16px;
         font-weight: 600;
-        margin-bottom: 8px;
+        margin-bottom: 12px;
         color: hsl(var(--foreground));
       }
 
-      .selected-collections-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-      }
-
-      .selected-collection {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        padding: 8px 10px;
-        background: hsl(var(--muted) / 0.3);
-        border-radius: calc(var(--radius) - 2px);
+      .library-selector select {
+        width: 100%;
+        padding: 12px;
         border: 1px solid hsl(var(--border));
-      }
-
-      .selected-label {
-        font-size: 10px;
-        font-weight: 600;
-        color: hsl(var(--muted-foreground));
-        text-transform: uppercase;
-        letter-spacing: 0.025em;
-      }
-
-      .selected-value {
-        font-size: 12px;
-        font-weight: 600;
+        border-radius: var(--radius);
+        background: hsl(var(--background));
         color: hsl(var(--foreground));
-        font-family: "SF Mono", "Menlo", "Monaco", "Courier New", monospace;
-      }
-
-      /* Responsive selected collections */
-      @media (max-width: 600px) {
-        .selected-collections-grid {
-          grid-template-columns: 1fr;
-        }
+        font-size: 13px;
       }
 
       /* Buttons */
@@ -398,65 +317,6 @@
 
       .btn-secondary:hover:not(:disabled) {
         background: hsl(var(--muted));
-      }
-
-      /* Collection groups */
-      .collection-group {
-        margin-bottom: 12px;
-      }
-
-      .collection-group:last-child {
-        margin-bottom: 0;
-      }
-
-      .collection-group-header {
-        font-size: 11px;
-        font-weight: 600;
-        color: hsl(var(--muted-foreground));
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 6px;
-        padding-left: 4px;
-      }
-
-      /* Actions */
-      .actions {
-        display: flex;
-        gap: 12px;
-        justify-content: flex-end;
-        padding-top: 8px;
-        padding-bottom: 16px;
-      }
-
-      .actions .btn {
-        width: 100%;
-      }
-
-      .collections-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-      }
-
-      .refresh-btn {
-        background: none;
-        border: none;
-        font-size: 14px;
-        cursor: pointer;
-        padding: 4px;
-        border-radius: calc(var(--radius) - 2px);
-        color: hsl(var(--muted-foreground));
-        transition: all 0.2s ease;
-      }
-
-      .refresh-btn:hover {
-        background: hsl(var(--muted));
-        color: hsl(var(--foreground));
-      }
-
-      .refresh-btn:active {
-        transform: rotate(180deg);
       }
 
       /* Cards */
@@ -555,25 +415,6 @@
         background: hsl(var(--muted) / 0.8);
       }
 
-      .result-title::after {
-        content: "▼";
-        font-size: 10px;
-        color: hsl(var(--muted-foreground));
-        transition: transform 0.2s ease;
-      }
-
-      .result-group.collapsed .result-title::after {
-        transform: rotate(-90deg);
-      }
-
-      .result-group.collapsed .variable-list {
-        display: none;
-      }
-
-      .result-group.collapsed .result-title {
-        border-bottom: none;
-      }
-
       .result-count {
         font-size: 11px;
         color: hsl(var(--muted-foreground));
@@ -653,6 +494,15 @@
         word-break: break-word;
       }
 
+      /* Actions */
+      .actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        padding-top: 16px;
+        border-top: 1px solid hsl(var(--border));
+      }
+
       /* Error card */
       .error-card {
         padding: 32px 24px;
@@ -706,69 +556,10 @@
         </p>
       </div>
 
-      <div id="collection-section" class="section">
-        <div class="collections-overview" id="library-info">
-          <div class="collections-header">
-            <h3>📚 Available Collections</h3>
-            <button
-              id="refresh-collections-btn"
-              class="refresh-btn"
-              title="Refresh collections"
-            >
-              🔄
-            </button>
-          </div>
-          <div id="library-list"></div>
-        </div>
-
-        <div class="collection-grid">
-          <div class="collection-card">
-            <div class="collection-card-header">
-              <div class="collection-icon">🎯</div>
-              <div class="collection-title">
-                <h3>Source Collection</h3>
-                <p>Library with design tokens to reference</p>
-              </div>
-            </div>
-            <select id="source-collection-select" class="collection-select">
-              <option value="">Choose source collection...</option>
-            </select>
-          </div>
-
-          <div class="collection-card">
-            <div class="collection-card-header">
-              <div class="collection-icon">📁</div>
-              <div class="collection-title">
-                <h3>Target Collection</h3>
-                <p>Local collection to create variables in</p>
-              </div>
-            </div>
-            <select id="target-collection-select" class="collection-select">
-              <option value="">Choose target collection...</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="actions">
-          <button id="preview-btn" class="btn btn-primary" disabled>
-            Next: Upload CSS File
-          </button>
-        </div>
-      </div>
-
-      <div id="upload-section" class="section hidden">
-        <div class="selected-collections-info">
-          <h3>📋 Selected Collections</h3>
-          <div class="selected-collections-grid">
-            <div class="selected-collection">
-              <span class="selected-label">Source:</span>
-              <span id="selected-source" class="selected-value"></span>
-            </div>
-            <div class="selected-collection">
-              <span class="selected-label">Target:</span>
-              <span id="selected-target" class="selected-value"></span>
-            </div>
-          </div>
+      <div id="upload-section" class="section">
+        <div class="library-info" id="library-info">
+          <h3>📚 Available Collections</h3>
+          <div id="library-list">Loading collections...</div>
         </div>
 
         <div class="upload-area" id="upload-area">
@@ -783,9 +574,6 @@
         <div class="supported-formats">
           <small>Supported: .css files with @theme and light/dark modes</small>
         </div>
-        <div class="actions">
-          <button id="back-btn" class="btn btn-secondary">Back</button>
-        </div>
       </div>
 
       <div id="loading-section" class="section hidden">
@@ -797,6 +585,47 @@
 
       <div id="preview-section" class="section hidden">
         <h2>📋 Configure & Preview</h2>
+
+        <div class="library-selector">
+          <h3>🎯 Select Source Collection</h3>
+          <p
+            style="
+              font-size: 12px;
+              color: hsl(var(--muted-foreground));
+              margin-bottom: 12px;
+            "
+          >
+            Choose which local collection contains the base colors you want to
+            reference.
+          </p>
+          <select id="source-collection-select">
+            <option value="">Choose source collection...</option>
+          </select>
+        </div>
+
+        <div class="collection-selector">
+          <h3>📁 Target Collection</h3>
+          <div class="collection-option">
+            <label>
+              <input
+                type="radio"
+                name="collection-choice"
+                value="new"
+                checked
+              />
+              Create new target collection
+            </label>
+          </div>
+          <div class="collection-option">
+            <label>
+              <input type="radio" name="collection-choice" value="existing" />
+              Use existing target collection
+            </label>
+            <select id="existing-collection-select" disabled>
+              <option value="">Choose target collection...</option>
+            </select>
+          </div>
+        </div>
 
         <div class="summary-card">
           <div class="summary-stat">
@@ -882,8 +711,6 @@
       var isProcessing = false;
       var currentResults = null;
       var availableCollections = [];
-      var libraryCollections = [];
-      var localCollections = [];
 
       document.addEventListener("DOMContentLoaded", function () {
         var elements = {
@@ -893,23 +720,18 @@
           sourceCollectionSelect: document.getElementById(
             "source-collection-select"
           ),
-          targetCollectionSelect: document.getElementById(
-            "target-collection-select"
+          collectionRadios: document.querySelectorAll(
+            'input[name="collection-choice"]'
           ),
-          previewBtn: document.getElementById("preview-btn"),
-          backBtn: document.getElementById("back-btn"),
+          existingCollectionSelect: document.getElementById(
+            "existing-collection-select"
+          ),
           uploadNewBtn: document.getElementById("upload-new-btn"),
           closeBtn: document.getElementById("close-btn"),
           retryBtn: document.getElementById("retry-btn"),
           cancelBtn: document.getElementById("cancel-btn"),
           applyBtn: document.getElementById("apply-btn"),
           loadingText: document.getElementById("loading-text"),
-          selectedInfo: document.getElementById("selected-info"),
-          selectedSource: document.getElementById("selected-source"),
-          selectedTarget: document.getElementById("selected-target"),
-          refreshCollectionsBtn: document.getElementById(
-            "refresh-collections-btn"
-          ),
         };
 
         // File input listener
@@ -943,28 +765,34 @@
         if (elements.sourceCollectionSelect) {
           elements.sourceCollectionSelect.addEventListener(
             "change",
-            updatePreviewButton
+            updateApplyButton
           );
         }
 
-        if (elements.targetCollectionSelect) {
-          elements.targetCollectionSelect.addEventListener(
+        // Collection choice listeners
+        if (elements.collectionRadios) {
+          for (var i = 0; i < elements.collectionRadios.length; i++) {
+            elements.collectionRadios[i].addEventListener(
+              "change",
+              function () {
+                var existingSelect = elements.existingCollectionSelect;
+                if (this.value === "existing") {
+                  existingSelect.disabled = false;
+                } else {
+                  existingSelect.disabled = true;
+                  existingSelect.value = "";
+                }
+                updateApplyButton();
+              }
+            );
+          }
+        }
+
+        if (elements.existingCollectionSelect) {
+          elements.existingCollectionSelect.addEventListener(
             "change",
-            updatePreviewButton
+            updateApplyButton
           );
-        }
-
-        if (elements.previewBtn) {
-          elements.previewBtn.addEventListener("click", function () {
-            updateSelectedInfo();
-            showSection("upload-section");
-          });
-        }
-
-        if (elements.backBtn) {
-          elements.backBtn.addEventListener("click", function () {
-            showSection("collection-section");
-          });
         }
 
         if (elements.cancelBtn) {
@@ -981,16 +809,27 @@
           elements.applyBtn.addEventListener("click", function () {
             var selectedSourceCollection =
               elements.sourceCollectionSelect.value;
-            var selectedTargetCollection =
-              elements.targetCollectionSelect.value;
+            var collectionChoiceElement = document.querySelector(
+              'input[name="collection-choice"]:checked'
+            );
+            var collectionChoice = collectionChoiceElement
+              ? collectionChoiceElement.value
+              : null;
+            var existingCollectionId = elements.existingCollectionSelect.value;
 
             if (
               currentResults &&
               currentResults.variables &&
               selectedSourceCollection &&
-              selectedTargetCollection
+              collectionChoice
             ) {
-              // Find source collection type
+              if (collectionChoice === "existing" && !existingCollectionId) {
+                alert(
+                  "Please select an existing target collection or choose to create a new one."
+                );
+                return;
+              }
+              // Find the source collection type
               var sourceCollectionType = "local"; // default
               for (var i = 0; i < availableCollections.length; i++) {
                 if (availableCollections[i].id === selectedSourceCollection) {
@@ -1003,8 +842,8 @@
                 currentResults.variables,
                 selectedSourceCollection,
                 sourceCollectionType,
-                "existing", // Always use existing collection
-                selectedTargetCollection
+                collectionChoice,
+                existingCollectionId
               );
             }
           });
@@ -1017,13 +856,6 @@
               "*"
             );
           });
-        }
-
-        if (elements.refreshCollectionsBtn) {
-          elements.refreshCollectionsBtn.addEventListener(
-            "click",
-            loadCollections
-          );
         }
 
         // Message handler
@@ -1041,14 +873,9 @@
             case "collections-loaded":
               if (success) {
                 availableCollections = sourceCollections;
-                libraryCollections = sourceCollections.filter(function (c) {
-                  return c.type === "library";
-                });
-                localCollections = sourceCollections.filter(function (c) {
-                  return c.type === "local";
-                });
                 displayCollectionInfo(sourceCollections);
-                populateCollections(libraryCollections, localCollections);
+                populateSourceCollectionSelect(sourceCollections);
+                populateTargetCollectionSelect(targetCollections);
                 if (warning) {
                   console.warn("⚠️ " + warning);
                 }
@@ -1082,60 +909,26 @@
           }
         };
 
-        function updatePreviewButton() {
-          var source = elements.sourceCollectionSelect.value;
-          var target = elements.targetCollectionSelect.value;
-          elements.previewBtn.disabled = !(source && target);
-        }
+        function updateApplyButton() {
+          var sourceCollectionSelected = elements.sourceCollectionSelect.value;
+          var collectionChoiceElement = document.querySelector(
+            'input[name="collection-choice"]:checked'
+          );
+          var collectionChoice = collectionChoiceElement
+            ? collectionChoiceElement.value
+            : null;
+          var existingCollectionSelected =
+            elements.existingCollectionSelect.value;
 
-        function updateSelectedInfo() {
-          var sourceIdx = elements.sourceCollectionSelect.selectedIndex;
-          var targetIdx = elements.targetCollectionSelect.selectedIndex;
-          var sourceText =
-            elements.sourceCollectionSelect.options[sourceIdx].text;
-          var targetText =
-            elements.targetCollectionSelect.options[targetIdx].text;
-          elements.selectedSource.innerHTML = sourceText;
-          elements.selectedTarget.innerHTML = targetText;
-        }
+          var canApply =
+            sourceCollectionSelected && collectionChoice && currentResults;
 
-        function populateCollections(libs, locals) {
-          libraryCollections = libs;
-          localCollections = locals;
-          var sourceSel = elements.sourceCollectionSelect;
-          var targetSel = elements.targetCollectionSelect;
-          sourceSel.innerHTML = "";
-          targetSel.innerHTML = "";
-          for (var i = 0; i < libs.length; i++) {
-            var opt = document.createElement("option");
-            opt.value = libs[i].id;
-            opt.text = libs[i].name;
-            sourceSel.appendChild(opt);
+          if (collectionChoice === "existing") {
+            canApply = canApply && existingCollectionSelected;
           }
-          for (var j = 0; j < locals.length; j++) {
-            var opt2 = document.createElement("option");
-            opt2.value = locals[j].id;
-            opt2.text = locals[j].name;
-            targetSel.appendChild(opt2);
-          }
-          // Default to first library and first local
-          if (libs.length > 0) sourceSel.value = libs[0].id;
-          if (locals.length > 0) targetSel.value = locals[0].id;
-          updatePreviewButton();
+
+          elements.applyBtn.disabled = !canApply;
         }
-
-        // Load collections on page load
-        loadCollections();
-
-        // Add accordion functionality to result groups
-        document.addEventListener("click", function (e) {
-          if (e.target.classList.contains("result-title")) {
-            var resultGroup = e.target.closest(".result-group");
-            if (resultGroup) {
-              resultGroup.classList.toggle("collapsed");
-            }
-          }
-        });
       });
 
       function processFile(file) {
@@ -1177,6 +970,82 @@
         parent.postMessage({ pluginMessage: { type: "get-collections" } }, "*");
       }
 
+      function displayCollectionInfo(collections) {
+        var collectionList = document.getElementById("library-list");
+
+        if (!collections || collections.length === 0) {
+          collectionList.innerHTML =
+            '<div style="color: hsl(var(--muted-foreground)); font-style: italic;">No variable collections found</div>';
+          return;
+        }
+
+        var html = "";
+        for (var i = 0; i < collections.length; i++) {
+          var collection = collections[i];
+          var errorText = collection.error
+            ? " ⚠️ Error: " + collection.error
+            : "";
+          var icon = collection.type === "library" ? "📚" : "📁";
+          var modeText = collection.modeCount
+            ? ", " + collection.modeCount + " modes"
+            : "";
+
+          html += '<div class="library-item">';
+          html +=
+            '<div class="library-name">' +
+            icon +
+            " " +
+            collection.name +
+            " (" +
+            collection.variableCount +
+            " variables" +
+            modeText +
+            ")" +
+            errorText +
+            "</div>";
+          html += "</div>";
+        }
+        collectionList.innerHTML = html;
+      }
+
+      function populateSourceCollectionSelect(collections) {
+        var select = document.getElementById("source-collection-select");
+
+        // Clear existing options except the first one
+        while (select.children.length > 1) {
+          select.removeChild(select.lastChild);
+        }
+
+        for (var i = 0; i < collections.length; i++) {
+          var collection = collections[i];
+          var option = document.createElement("option");
+          option.value = collection.id;
+          option.textContent =
+            collection.name + " (" + collection.variableCount + " variables)";
+          select.appendChild(option);
+        }
+
+        console.log("📚 Populated source collections in dropdown");
+      }
+
+      function populateTargetCollectionSelect(collections) {
+        var select = document.getElementById("existing-collection-select");
+
+        // Clear existing options except the first one
+        while (select.children.length > 1) {
+          select.removeChild(select.lastChild);
+        }
+
+        for (var i = 0; i < collections.length; i++) {
+          var collection = collections[i];
+          var option = document.createElement("option");
+          option.value = collection.id;
+          option.textContent =
+            collection.name + " (" + collection.modeCount + " modes)";
+          select.appendChild(option);
+        }
+      }
+
       function createVariables(
         variables,
         selectedSourceCollectionId,
@@ -1206,74 +1075,8 @@
         );
       }
 
-      function displayCollectionInfo(collections) {
-        var collectionList = document.getElementById("library-list");
-
-        if (!collections || collections.length === 0) {
-          collectionList.innerHTML =
-            '<div style="color: hsl(var(--muted-foreground)); font-style: italic; text-align: center; padding: 8px;">No variable collections found</div>';
-          return;
-        }
-
-        // Group collections by type, preserving original order
-        var libraryCollections = collections.filter(function (c) {
-          return c.type === "library";
-        });
-        var localCollections = collections.filter(function (c) {
-          return c.type === "local";
-        });
-
-        var html = "";
-
-        // Library collections
-        if (libraryCollections.length > 0) {
-          html += '<div class="collection-group">';
-          html +=
-            '<div class="collection-group-header">📚 Library Collections</div>';
-          for (var i = 0; i < libraryCollections.length; i++) {
-            html += createCollectionItem(libraryCollections[i]);
-          }
-          html += "</div>";
-        }
-
-        // Local collections
-        if (localCollections.length > 0) {
-          html += '<div class="collection-group">';
-          html +=
-            '<div class="collection-group-header">📁 Local Collections</div>';
-          for (var j = 0; j < localCollections.length; j++) {
-            html += createCollectionItem(localCollections[j]);
-          }
-          html += "</div>";
-        }
-
-        collectionList.innerHTML = html;
-      }
-
-      function createCollectionItem(collection) {
-        var icon = collection.type === "library" ? "📚" : "📁";
-        var modeText = collection.modeCount
-          ? " • " + collection.modeCount + " modes"
-          : "";
-
-        var html = '<div class="library-item">';
-        html += '<div class="library-main">';
-        html += '<div class="library-name">' + collection.name + "</div>";
-        html += "</div>";
-        html +=
-          '<div class="library-stats">' +
-          collection.variableCount +
-          " vars" +
-          modeText +
-          "</div>";
-        html += "</div>";
-
-        return html;
-      }
-
       function showSection(sectionId) {
         var sections = [
-          "collection-section",
           "upload-section",
           "loading-section",
           "preview-section",
@@ -1282,10 +1085,10 @@
         ];
         for (var i = 0; i < sections.length; i++) {
           var section = document.getElementById(sections[i]);
-          if (section)
-            section.className =
-              "section" + (sections[i] === sectionId ? "" : " hidden");
+          if (section) section.classList.add("hidden");
         }
+        var targetSection = document.getElementById(sectionId);
+        if (targetSection) targetSection.classList.remove("hidden");
       }
 
       function resetToUpload() {
@@ -1302,14 +1105,20 @@
         sourceCollectionSelect.innerHTML =
           '<option value="">Choose source collection...</option>';
 
-        // Reset target collection select
-        var targetCollectionSelect = document.getElementById(
-          "target-collection-select"
+        // Reset collection select
+        var collectionSelect = document.getElementById(
+          "existing-collection-select"
         );
-        targetCollectionSelect.innerHTML =
+        collectionSelect.innerHTML =
           '<option value="">Choose target collection...</option>';
+        collectionSelect.disabled = true;
 
-        showSection("collection-section");
+        // Reset radio buttons
+        document.querySelector(
+          'input[name="collection-choice"][value="new"]'
+        ).checked = true;
+
+        showSection("upload-section");
         var fileInput = document.getElementById("file-input");
         if (fileInput) fileInput.value = "";
       }
@@ -1325,25 +1134,30 @@
           "preview"
         );
 
-        // Enable apply button if collections are selected
-        var sourceCollectionSelect = document.getElementById(
-          "source-collection-select"
-        );
-        var targetCollectionSelect = document.getElementById(
-          "target-collection-select"
-        );
-        var applyBtn = document.getElementById("apply-btn");
+        // Update apply button state
+        function updateButton() {
+          var sourceCollectionSelect = document.getElementById(
+            "source-collection-select"
+          );
+          var collectionChoiceElement = document.querySelector(
+            'input[name="collection-choice"]:checked'
+          );
+          var collectionChoice = collectionChoiceElement
+            ? collectionChoiceElement.value
+            : null;
+          var existingCollectionSelect = document.getElementById(
+            "existing-collection-select"
+          );
 
-        if (
-          sourceCollectionSelect.value &&
-          targetCollectionSelect.value &&
-          results.variables &&
-          results.variables.length > 0
-        ) {
-          applyBtn.disabled = false;
-        } else {
-          applyBtn.disabled = true;
+          var canApply = sourceCollectionSelect.value && collectionChoice;
+          if (collectionChoice === "existing") {
+            canApply = canApply && existingCollectionSelect.value;
+          }
+
+          document.getElementById("apply-btn").disabled = !canApply;
         }
+
+        updateButton();
       }
 
       function displayCreationResults(results) {
