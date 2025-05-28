@@ -350,7 +350,7 @@ function createVariablesFromCSS(
   existingCollectionId
 ) {
   try {
-    console.log("🚀 Starting variable creation process...");
+    console.log("\n🚀 Starting variable creation process...");
     console.log("📋 Variables to create: " + variablesToCreate.length);
     console.log(
       "📚 Source collection: " +
@@ -595,7 +595,7 @@ function processLocalVariables(
     var item = variablesToCreate[i];
 
     try {
-      console.log("🔄 Processing: " + item.variableName);
+      console.log("\n🔄 Processing: " + item.variableName);
 
       // Find source variables
       var lightSourceVar = findSourceVariable(
@@ -724,7 +724,7 @@ function processLibraryVariable(
 ) {
   return new Promise(function (resolve) {
     try {
-      console.log("🔄 Processing: " + item.variableName);
+      console.log("\n🔄 Processing: " + item.variableName);
 
       // Find source variables
       var lightSourceVar = findSourceVariable(
@@ -846,13 +846,13 @@ function findSourceVariable(sourceVariableMap, variableName) {
 
 // ===== SEND RESULTS TO UI =====
 function sendResults(created, updated, failed, total) {
-  console.log("📊 === FINAL RESULTS ===");
+  console.log("\n📊 === FINAL RESULTS ===");
   console.log("✅ Created: " + created.length);
   console.log("✏️ Updated: " + updated.length);
   console.log("❌ Failed: " + failed.length);
 
   if (failed.length > 0) {
-    console.log("❌ Failed variables:");
+    console.log("\n❌ Failed variables:");
     for (var i = 0; i < failed.length; i++) {
       console.log("  - " + failed[i].variableName + ": " + failed[i].error);
     }
@@ -875,5 +875,4 @@ function sendResults(created, updated, failed, total) {
   });
 }
 
-// Load collections on startup
-loadCollections();
+// Load collections on startup - REMOVED to prevent duplicate logs

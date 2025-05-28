@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Theme Variables Mapper</title>
+    <title>Variables Mapper</title>
     <style>
       /* Inline CSS - Required for Figma plugins */
 
@@ -30,6 +30,7 @@
         --radius: 8px;
         --success: 142.1 76.2% 36.3%;
         --warning: 47.9 95.8% 53.1%;
+        --info: 221.2 83.2% 53.3%;
       }
 
       body {
@@ -470,13 +471,19 @@
       }
 
       .summary-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        display: flex;
+        flex-direction: column;
         gap: 12px;
         margin-bottom: 16px;
       }
 
+      .summary-row {
+        display: flex;
+        gap: 12px;
+      }
+
       .summary-card {
+        flex: 1;
         padding: 24px 20px;
         text-align: center;
       }
@@ -484,6 +491,11 @@
       .summary-card.success {
         border-color: hsl(var(--success) / 0.3);
         background: hsl(var(--success) / 0.05);
+      }
+
+      .summary-card.info {
+        border-color: hsl(var(--info) / 0.3);
+        background: hsl(var(--info) / 0.05);
       }
 
       .summary-card.warning {
@@ -512,6 +524,10 @@
 
       .summary-card.success .stat-number {
         color: hsl(var(--success));
+      }
+
+      .summary-card.info .stat-number {
+        color: hsl(var(--info));
       }
 
       .summary-card.warning .stat-number {
@@ -684,6 +700,7 @@
 
         .summary-grid {
           grid-template-columns: 1fr;
+          grid-template-rows: repeat(4, 1fr);
         }
 
         .actions {
@@ -699,7 +716,7 @@
   <body>
     <div id="app">
       <div class="header">
-        <h1>Theme Variables Mapper</h1>
+        <h1>Variables Mapper</h1>
         <p class="subtitle">
           Map CSS @theme variables to Figma variables <br />
           with shared library references
@@ -796,8 +813,6 @@
       </div>
 
       <div id="preview-section" class="section hidden">
-        <h2>📋 Configure & Preview</h2>
-
         <div class="summary-card">
           <div class="summary-stat">
             <span class="stat-number" id="preview-total">0</span>
@@ -805,16 +820,18 @@
           </div>
         </div>
 
-        <div id="preview-variables" class="result-group">
-          <h3 class="result-title">🎨 Variables to Create</h3>
-          <div id="preview-variables-list" class="variable-list"></div>
-        </div>
-
         <div class="actions">
-          <button id="cancel-btn" class="btn btn-secondary">Cancel</button>
           <button id="apply-btn" class="btn btn-primary" disabled>
             Apply Changes
           </button>
+          <button id="cancel-btn" class="btn btn-secondary">Cancel</button>
+        </div>
+
+        <h2>👀 Preview</h2>
+
+        <div id="preview-variables" class="result-group">
+          <h3 class="result-title">🎨 Variables to Create</h3>
+          <div id="preview-variables-list" class="variable-list"></div>
         </div>
       </div>
 
@@ -822,24 +839,41 @@
         <h2>🎉 Results</h2>
 
         <div class="summary-grid">
-          <div class="summary-card success">
-            <div class="summary-stat">
-              <span class="stat-number" id="created-count">0</span>
-              <span class="stat-label">Created</span>
+          <div class="summary-row">
+            <div class="summary-card success">
+              <div class="summary-stat">
+                <span class="stat-number" id="created-count">0</span>
+                <span class="stat-label">Created</span>
+              </div>
+            </div>
+            <div class="summary-card info">
+              <div class="summary-stat">
+                <span class="stat-number" id="updated-count">0</span>
+                <span class="stat-label">Updated</span>
+              </div>
             </div>
           </div>
-          <div class="summary-card warning">
-            <div class="summary-stat">
-              <span class="stat-number" id="updated-count">0</span>
-              <span class="stat-label">Updated</span>
+          <div class="summary-row">
+            <div class="summary-card error">
+              <div class="summary-stat">
+                <span class="stat-number" id="removed-count">0</span>
+                <span class="stat-label">Removed</span>
+              </div>
+            </div>
+            <div class="summary-card warning">
+              <div class="summary-stat">
+                <span class="stat-number" id="failed-count">0</span>
+                <span class="stat-label">Failed</span>
+              </div>
             </div>
           </div>
-          <div class="summary-card error">
-            <div class="summary-stat">
-              <span class="stat-number" id="failed-count">0</span>
-              <span class="stat-label">Failed</span>
-            </div>
-          </div>
+        </div>
+
+        <div class="actions">
+          <button id="upload-new-btn" class="btn btn-secondary">
+            Upload New File
+          </button>
+          <button id="close-btn" class="btn btn-primary">Close</button>
         </div>
 
         <div id="results-created" class="result-group">
@@ -848,20 +882,18 @@
         </div>
 
         <div id="results-updated" class="result-group">
-          <h3 class="result-title">⚠️ Updated Variables</h3>
+          <h3 class="result-title">🔄 Updated Variables</h3>
           <div id="results-updated-list" class="variable-list"></div>
         </div>
 
-        <div id="results-failed" class="result-group">
-          <h3 class="result-title">❌ Failed Variables</h3>
-          <div id="results-failed-list" class="variable-list"></div>
+        <div id="results-removed" class="result-group">
+          <h3 class="result-title">🗑️ Removed Variables</h3>
+          <div id="results-removed-list" class="variable-list"></div>
         </div>
 
-        <div class="actions">
-          <button id="upload-new-btn" class="btn btn-secondary">
-            Upload New File
-          </button>
-          <button id="close-btn" class="btn btn-primary">Close</button>
+        <div id="results-failed" class="result-group">
+          <h3 class="result-title">⚠️ Failed Variables</h3>
+          <div id="results-failed-list" class="variable-list"></div>
         </div>
       </div>
 
@@ -1348,28 +1380,36 @@
 
       function displayCreationResults(results) {
         document.getElementById("created-count").textContent =
-          results.summary.created;
+          results.summary.created || 0;
         document.getElementById("updated-count").textContent =
-          results.summary.updated;
+          results.summary.updated || 0;
+        document.getElementById("removed-count").textContent =
+          results.summary.removed || 0;
         document.getElementById("failed-count").textContent =
-          results.summary.failed;
+          results.summary.failed || 0;
 
         populateVariableList(
           "results-created",
           "results-created-list",
-          results.created,
+          results.created || [],
           "created"
         );
         populateVariableList(
           "results-updated",
           "results-updated-list",
-          results.updated,
+          results.updated || [],
           "updated"
+        );
+        populateVariableList(
+          "results-removed",
+          "results-removed-list",
+          results.removed || [],
+          "removed"
         );
         populateVariableList(
           "results-failed",
           "results-failed-list",
-          results.failed,
+          results.failed || [],
           "failed"
         );
       }
