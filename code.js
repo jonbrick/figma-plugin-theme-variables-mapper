@@ -192,22 +192,62 @@ function cleanupImportedVariables() {
     .getAsync("importedVariableIds")
     .then(function (ids) {
       if (!ids || !ids.length) {
+        console.log("No imported variables to clean up.");
         return;
       }
 
-      console.log("Cleaning up imported variables:", ids.length);
+      console.log(
+        "🧹 Attempting to clean up",
+        ids.length,
+        "initially imported variables..."
+      );
+      var keptCount = 0;
 
       ids.forEach(function (id) {
         var variable = figma.variables.getVariableById(id);
         if (variable) {
-          variable.remove();
+          try {
+            variable.remove();
+          } catch (e) {
+            if (
+              e.message &&
+              e.message.includes("Removing this node is not allowed")
+            ) {
+              // This is expected if the variable is now aliased
+              console.log(
+                "ℹ️ Kept variable '" +
+                  variable.name +
+                  "' (ID: " +
+                  id +
+                  ") as it is currently in use (likely aliased)."
+              );
+              keptCount++;
+            } else {
+              // Log other unexpected errors
+              console.warn(
+                "⚠️ Unexpected error during cleanup of variable ID " + id + ":",
+                e.message
+              );
+            }
+          }
         }
       });
 
+      if (keptCount > 0) {
+        console.log(
+          "ℹ️",
+          keptCount,
+          "variables were kept because they are in use."
+        );
+      }
+      console.log("✅ Cleanup routine finished.");
+
+      // Clear the stored IDs regardless, as we've attempted cleanup
       return figma.clientStorage.setAsync("importedVariableIds", []);
     })
     .catch(function (error) {
-      console.warn("Cleanup error:", error);
+      // This catch is for errors with clientStorage itself
+      console.warn("🚨 Error during clientStorage access in cleanup:", error);
     });
 }
 
@@ -483,7 +523,11 @@ function parseVariableDefinitions(cssBlock) {
 
     // Handle opacity values
     if (opacity) {
-      reference = reference + "_" + opacity;
+      if (opacity.length === 1) {
+        reference = reference + "_0" + opacity;
+      } else {
+        reference = reference + "_" + opacity;
+      }
     }
 
     variables[varName] = reference;
