@@ -598,6 +598,18 @@ function processVariables(
             variables: libVarList,
           });
 
+          // Add this right after the console.log for "Library Variables:" around line 420
+          console.log("=== DETAILED LIBRARY VARIABLES ===");
+          for (var i = 0; i < libraryVariables.length; i++) {
+            var v = libraryVariables[i];
+            console.log("Variable " + i + ":", {
+              name: v.name,
+              key: v.key,
+              // Add any other properties you want to see
+            });
+          }
+          console.log("=== END LIBRARY VARIABLES ===");
+
           // Create variable map
           var sourceVariableMap = {};
           for (var i = 0; i < libraryVariables.length; i++) {
@@ -973,6 +985,9 @@ function processLibraryVariable(
 
 // ===== FIND SOURCE VARIABLE =====
 function findSourceVariable(sourceVariableMap, variableName) {
+  // Normalize by removing _100 suffix if present
+  variableName = variableName.replace(/_100$/, "");
+
   // Try exact match first
   if (sourceVariableMap[variableName]) {
     return sourceVariableMap[variableName];
