@@ -22,8 +22,6 @@ console.log("✅ UI shown");
 // Track if collections have been loaded
 var collectionsLoaded = false;
 var uploadedJsonData = null;
-var detectedSentiment = null;
-var selectedMode = "replace"; // Default mode
 
 // ===== MAIN MESSAGE HANDLER =====
 figma.ui.onmessage = function (msg) {
@@ -35,24 +33,17 @@ figma.ui.onmessage = function (msg) {
       break;
 
     case "parse-css":
-      parseCSSContent(msg.cssContent, msg.filename);
+      parseCSSContent(msg.cssContent);
       break;
 
     case "create-variables":
       uploadedJsonData = msg.jsonData || null;
-      selectedMode = msg.mode || "replace";
-      detectedSentiment = msg.sentiment || null;
-
-      console.log("📊 Create Variables Context:", {
-        sentiment: detectedSentiment,
-        mode: selectedMode,
-        hasJsonData: uploadedJsonData
+      console.log(
+        "JSON data received:",
+        uploadedJsonData
           ? "Yes (" + Object.keys(uploadedJsonData).length + " variables)"
-          : "No",
-        sourceCollection: msg.selectedSourceCollectionId,
-        targetCollection: msg.existingCollectionId,
-      });
-
+          : "No"
+      );
       createVariablesFromCSS(
         msg.variablesToCreate,
         msg.selectedSourceCollectionId,
@@ -73,17 +64,6 @@ figma.ui.onmessage = function (msg) {
       cleanupImportedVariables();
   }
 };
-
-// ===== DETECT SENTIMENT FROM FILENAME =====
-function detectSentimentFromFilename(filename) {
-  if (!filename) return null;
-
-  // Strict matching for standardized names
-  var match = filename.match(
-    /^(danger|warning|success|info|brand|neutral)\.css$/
-  );
-  return match ? match[1] : null;
-}
 
 // ===== CREATE COLLECTION INFO OBJECT =====
 function createCollectionInfo(collection, variables, type, error) {
@@ -369,23 +349,9 @@ function loadCollections() {
 }
 
 // ===== PARSE CSS CONTENT =====
-function parseCSSContent(cssContent, filename) {
+function parseCSSContent(cssContent) {
   try {
     console.log("📄 Parsing CSS content...");
-    console.log("📁 Filename:", filename);
-
-    // Detect sentiment from filename
-    var sentiment = detectSentimentFromFilename(filename);
-    if (filename && !sentiment) {
-      // Only validate if a filename was provided
-      figma.ui.postMessage({
-        type: "parsing-complete",
-        success: false,
-        message:
-          "Filename must be one of: danger.css, warning.css, success.css, info.css, brand.css, or neutral.css",
-      });
-      return;
-    }
 
     // Validate CSS content
     if (!cssContent || typeof cssContent !== "string") {
@@ -409,9 +375,6 @@ function parseCSSContent(cssContent, filename) {
     }
 
     console.log("✅ Found " + themeVariables.length + " theme variables");
-    if (sentiment) {
-      console.log("🎯 Detected sentiment:", sentiment);
-    }
 
     // Send results to UI
     figma.ui.postMessage({
@@ -420,7 +383,6 @@ function parseCSSContent(cssContent, filename) {
       results: {
         variables: themeVariables,
         totalFound: themeVariables.length,
-        sentiment: sentiment,
       },
     });
   } catch (error) {
@@ -610,8 +572,6 @@ function createVariablesFromCSS(
       collectionChoice: collectionChoice,
       existingCollectionId: existingCollectionId,
       hasJsonData: uploadedJsonData ? "Yes" : "No",
-      sentiment: detectedSentiment,
-      mode: selectedMode,
     });
 
     // Initial context log
@@ -633,8 +593,6 @@ function createVariablesFromCSS(
       hasJsonData: uploadedJsonData
         ? "Yes (" + Object.keys(uploadedJsonData).length + " variables)"
         : "No",
-      sentiment: detectedSentiment,
-      mode: selectedMode,
       variables: variablesList,
     });
 
@@ -730,8 +688,7 @@ function createVariablesFromCSS(
             collectionChoice,
             [], // created
             [], // updated
-            [], // failed
-            [] // removed
+            [] // failed
           );
         })
         .catch(function (error) {
@@ -780,8 +737,7 @@ function processVariables(
   collectionChoice,
   created,
   updated,
-  failed,
-  removed
+  failed
 ) {
   try {
     console.log("🎯 Starting processVariables...");
@@ -823,55 +779,6 @@ function processVariables(
       names: Object.keys(existingVariables),
     });
 
-    // Handle variable removal in Replace mode
-    if (detectedSentiment && selectedMode === "replace") {
-      var orphanedVariables = findOrphanedSentimentVariables(
-        existingVariables,
-        variablesToCreate,
-        detectedSentiment
-      );
-
-      console.log("🗑️ Variable Removal Context:", {
-        sentiment: detectedSentiment,
-        mode: selectedMode,
-        existingCount: Object.keys(existingVariables).length,
-        cssVariableCount: variablesToCreate.length,
-        candidatesForRemoval: orphanedVariables.length,
-        orphanedVariables: orphanedVariables.map(function (v) {
-          return {
-            name: v.variableName,
-            id: v.variable.id,
-          };
-        }),
-      });
-
-      if (orphanedVariables.length > 0) {
-        console.log(
-          "🗑️ Removing " + orphanedVariables.length + " orphaned variables..."
-        );
-
-        for (var j = 0; j < orphanedVariables.length; j++) {
-          try {
-            console.log("  → Removed:", orphanedVariables[j].variableName);
-            orphanedVariables[j].variable.remove();
-            removed.push({
-              variableName: orphanedVariables[j].variableName,
-            });
-            // Remove from existingVariables so we don't try to update it
-            delete existingVariables[orphanedVariables[j].variableName];
-          } catch (error) {
-            console.error(
-              "  → Failed to remove:",
-              orphanedVariables[j].variableName,
-              error
-            );
-          }
-        }
-
-        console.log("✅ Removal complete");
-      }
-    }
-
     // Load source variables based on type
     if (sourceCollectionType === "library") {
       if (uploadedJsonData) {
@@ -886,8 +793,7 @@ function processVariables(
           darkModeId,
           created,
           updated,
-          failed,
-          removed
+          failed
         );
       } else {
         console.log("🐌 Using standard method for variable lookup");
@@ -924,8 +830,7 @@ function processVariables(
               darkModeId,
               created,
               updated,
-              failed,
-              removed
+              failed
             );
           })
           .catch(function (error) {
@@ -978,11 +883,10 @@ function processVariables(
         darkModeId,
         created,
         updated,
-        failed,
-        removed
+        failed
       );
 
-      sendResults(created, updated, failed, removed, variablesToCreate.length);
+      sendResults(created, updated, failed, variablesToCreate.length);
     }
   } catch (error) {
     console.error("❌ Variable Processing Error:", {
@@ -1000,36 +904,6 @@ function processVariables(
       message: "Error processing variables: " + error.message,
     });
   }
-}
-
-// ===== FIND ORPHANED SENTIMENT VARIABLES =====
-function findOrphanedSentimentVariables(
-  existingVariables,
-  cssVariables,
-  sentiment
-) {
-  var orphaned = [];
-  var sentimentPattern = new RegExp("color/[^/]+/" + sentiment + "($|/)");
-
-  // Build lookup of CSS variable names
-  var cssVariableNames = {};
-  for (var i = 0; i < cssVariables.length; i++) {
-    cssVariableNames[cssVariables[i].variableName] = true;
-  }
-
-  // Check existing variables
-  for (var name in existingVariables) {
-    if (sentimentPattern.test(name)) {
-      if (!cssVariableNames[name]) {
-        orphaned.push({
-          variableName: name,
-          variable: existingVariables[name],
-        });
-      }
-    }
-  }
-
-  return orphaned;
 }
 
 // ===== SETUP COLLECTION MODES =====
@@ -1165,8 +1039,7 @@ function processLibraryVariablesWithJson(
   darkModeId,
   created,
   updated,
-  failed,
-  removed
+  failed
 ) {
   console.log("🔄 Starting JSON-based variable processing:", {
     toCreate: variablesToCreate.length,
@@ -1253,11 +1126,10 @@ function processLibraryVariablesWithJson(
         created: created.length,
         updated: updated.length,
         failed: failed.length,
-        removed: removed.length,
         timeSeconds: totalTime.toFixed(1),
         ratePerSecond: (variablesToCreate.length / totalTime).toFixed(1),
       });
-      sendResults(created, updated, failed, removed, variablesToCreate.length);
+      sendResults(created, updated, failed, variablesToCreate.length);
     })
     .catch(function (error) {
       console.error("❌ JSON Library Import Error:", {
@@ -1267,7 +1139,7 @@ function processLibraryVariablesWithJson(
         total: variablesToCreate.length,
         timeSeconds: ((Date.now() - startTime) / 1000).toFixed(1),
       });
-      sendResults(created, updated, failed, removed, variablesToCreate.length);
+      sendResults(created, updated, failed, variablesToCreate.length);
     });
 }
 
@@ -1499,20 +1371,12 @@ function isSteplessColor(name) {
 }
 
 // ===== SEND RESULTS =====
-function sendResults(created, updated, failed, removed, totalVariables) {
-  console.log("📊 === FINAL RESULTS ===", {
+function sendResults(created, updated, failed, totalVariables) {
+  console.log("Variable Creation Results:", {
     created: created.length,
     updated: updated.length,
-    removed: removed.length,
     failed: failed.length,
-    sentiment: detectedSentiment,
-    mode: selectedMode,
     total: totalVariables,
-    details: {
-      createdVariables: created.slice(0, 5), // First 5 for preview
-      removedVariables: removed,
-      failedVariables: failed,
-    },
   });
 
   figma.ui.postMessage({
@@ -1521,12 +1385,11 @@ function sendResults(created, updated, failed, removed, totalVariables) {
     message:
       failed.length === 0
         ? "Variables created successfully"
-        : "Variable creation completed with errors",
+        : "Variable creation failed",
     results: {
       created: created,
       updated: updated,
       failed: failed,
-      removed: removed,
     },
   });
 }
@@ -1597,14 +1460,14 @@ function processLibraryVariables(
   Promise.all(importPromises)
     .then(function () {
       console.log("Library imports completed");
-      sendResults(created, updated, failed, removed, variablesToCreate.length);
+      sendResults(created, updated, failed, variablesToCreate.length);
     })
     .catch(function (error) {
       console.error("Library Import Error:", {
         error: error.message,
         stack: error.stack,
       });
-      sendResults(created, updated, failed, removed, variablesToCreate.length);
+      sendResults(created, updated, failed, variablesToCreate.length);
     });
 }
 

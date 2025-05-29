@@ -1,8 +1,21 @@
+<!-- 
+  REMINDER: This plugin must use ES5 syntax as Figma does not support ES6.
+  Avoid using:
+  - Arrow functions
+  - const/let
+  - Template literals
+  - Spread operators
+  - Destructuring
+  - Classes
+  - Modules
+  - Promises
+  - Async/await
+-->
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Variables Mapper</title>
+    <title>Collection Variable Mapper</title>
     <style>
       /* Inline CSS - Required for Figma plugins */
 
@@ -133,6 +146,77 @@
       .supported-formats small {
         color: hsl(var(--muted-foreground));
         font-size: 11px;
+      }
+
+      /* Sentiment indicator */
+      .sentiment-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: hsl(var(--accent));
+        border: 1px solid hsl(var(--border));
+        border-radius: 16px;
+        padding: 4px 12px;
+        font-size: 11px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+        margin-top: 12px;
+      }
+
+      .sentiment-indicator span {
+        font-size: 14px;
+      }
+
+      /* Mode toggle */
+      .mode-toggle {
+        background: hsl(var(--muted) / 0.3);
+        border: 1px solid hsl(var(--border));
+        border-radius: var(--radius);
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+
+      .mode-toggle h4 {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: hsl(var(--foreground));
+      }
+
+      .mode-option {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 8px;
+        cursor: pointer;
+      }
+
+      .mode-option:last-child {
+        margin-bottom: 0;
+      }
+
+      .mode-option input[type="radio"] {
+        margin-top: 2px;
+        cursor: pointer;
+      }
+
+      .mode-option-content {
+        flex: 1;
+      }
+
+      .mode-option-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 2px;
+      }
+
+      .mode-option-description {
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        line-height: 1.3;
       }
 
       /* Loading */
@@ -714,6 +798,31 @@
         line-height: 1.4;
       }
 
+      /* Removal warning */
+      .removal-warning {
+        background: hsl(var(--warning) / 0.1);
+        border: 1px solid hsl(var(--warning) / 0.3);
+        border-radius: var(--radius);
+        padding: 12px 16px;
+        margin-bottom: 16px;
+      }
+
+      .removal-warning h4 {
+        font-size: 13px;
+        font-weight: 600;
+        color: hsl(var(--warning));
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .removal-warning p {
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+        line-height: 1.4;
+      }
+
       /* Responsive */
       @media (max-width: 480px) {
         body {
@@ -817,10 +926,17 @@
             <p>Drag & drop your CSS file with @theme variables</p>
             <input type="file" id="file-input" accept=".css" hidden />
             <button id="browse-btn" class="btn btn-primary">Choose File</button>
+            <div id="sentiment-indicator" class="sentiment-indicator hidden">
+              <span>🎯</span>
+              <span id="sentiment-text">DANGER</span>
+            </div>
           </div>
         </div>
         <div class="supported-formats">
-          <small>Supported: .css files with @theme and light/dark modes</small>
+          <small
+            >Supported: danger.css, warning.css, success.css, info.css,
+            brand.css, neutral.css</small
+          >
         </div>
         <div class="actions">
           <button id="back-btn" class="btn btn-secondary">Back</button>
@@ -897,6 +1013,39 @@
           </div>
         </div>
 
+        <div id="mode-toggle" class="mode-toggle hidden">
+          <h4>Sync Mode</h4>
+          <label class="mode-option">
+            <input type="radio" name="mode" value="replace" checked />
+            <div class="mode-option-content">
+              <div class="mode-option-title">Replace mode (recommended)</div>
+              <div class="mode-option-description">
+                Keep in sync with CSS - creates, updates, and removes variables
+              </div>
+            </div>
+          </label>
+          <label class="mode-option">
+            <input type="radio" name="mode" value="merge" />
+            <div class="mode-option-content">
+              <div class="mode-option-title">Merge mode</div>
+              <div class="mode-option-description">
+                Only add/update, never remove existing variables
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <div id="removal-warning" class="removal-warning hidden">
+          <h4>
+            <span>⚠️</span>
+            <span id="removal-count">0</span> variables will be removed
+          </h4>
+          <p>
+            These variables exist in Figma but are not in the CSS file. They
+            will be removed in Replace mode.
+          </p>
+        </div>
+
         <div class="actions">
           <button id="apply-btn" class="btn btn-primary" disabled>
             Apply Changes
@@ -907,8 +1056,13 @@
         <h2>👀 Preview</h2>
 
         <div id="preview-variables" class="result-group">
-          <h3 class="result-title">🎨 Variables to Create</h3>
+          <h3 class="result-title">🎨 Variables to Create/Update</h3>
           <div id="preview-variables-list" class="variable-list"></div>
+        </div>
+
+        <div id="preview-removals" class="result-group hidden">
+          <h3 class="result-title">🗑️ Variables to Remove</h3>
+          <div id="preview-removals-list" class="variable-list"></div>
         </div>
       </div>
 
@@ -995,12 +1149,17 @@
       var localCollections = [];
       var selectedSourceCollection = null;
       var uploadedJsonData = null;
+      var detectedSentiment = null;
+      var selectedMode = "replace"; // Default mode
+      var currentFilename = null;
 
       document.addEventListener("DOMContentLoaded", function () {
         var elements = {
           fileInput: document.getElementById("file-input"),
           browseBtn: document.getElementById("browse-btn"),
           uploadArea: document.getElementById("upload-area"),
+          sentimentIndicator: document.getElementById("sentiment-indicator"),
+          sentimentText: document.getElementById("sentiment-text"),
           jsonFileInput: document.getElementById("json-file-input"),
           jsonBrowseBtn: document.getElementById("json-browse-btn"),
           jsonUploadArea: document.getElementById("json-upload-area"),
@@ -1031,6 +1190,9 @@
           refreshCollectionsBtn: document.getElementById(
             "refresh-collections-btn"
           ),
+          modeToggle: document.getElementById("mode-toggle"),
+          removalWarning: document.getElementById("removal-warning"),
+          removalCount: document.getElementById("removal-count"),
         };
 
         // File input listeners
@@ -1192,6 +1354,15 @@
           );
         }
 
+        // Mode toggle listeners
+        var modeRadios = document.querySelectorAll('input[name="mode"]');
+        for (var i = 0; i < modeRadios.length; i++) {
+          modeRadios[i].addEventListener("change", function (e) {
+            selectedMode = e.target.value;
+            updateRemovalWarning();
+          });
+        }
+
         // Message handler
         window.onmessage = function (event) {
           var pluginMessage = event.data.pluginMessage;
@@ -1227,6 +1398,16 @@
               isProcessing = false;
               if (success) {
                 currentResults = results;
+                detectedSentiment = results.sentiment;
+
+                // Update sentiment indicator
+                if (detectedSentiment) {
+                  elements.sentimentIndicator.classList.remove("hidden");
+                  elements.sentimentText.textContent =
+                    detectedSentiment.toUpperCase();
+                } else {
+                  elements.sentimentIndicator.classList.add("hidden");
+                }
 
                 // Check if we need JSON upload
                 if (
@@ -1246,7 +1427,15 @@
 
             case "creation-complete":
               isProcessing = false;
-              if (success) {
+              if (
+                success ||
+                (results &&
+                  (results.created ||
+                    results.updated ||
+                    results.removed ||
+                    results.failed))
+              ) {
+                // Show results if we have ANY results, even if success is false
                 displayCreationResults(results);
                 showSection("results-section");
               } else {
@@ -1349,6 +1538,17 @@
           updatePreviewButton();
         }
 
+        function updateRemovalWarning() {
+          if (!detectedSentiment || selectedMode !== "replace") {
+            elements.removalWarning.classList.add("hidden");
+            return;
+          }
+
+          // This is a placeholder - actual removal count would come from the plugin
+          // For now, just show/hide based on mode
+          elements.removalWarning.classList.remove("hidden");
+        }
+
         // Load collections on page load
         loadCollections();
 
@@ -1366,6 +1566,7 @@
       function processFile(file) {
         if (isProcessing) return;
         isProcessing = true;
+        currentFilename = file.name;
 
         if (!file.name.endsWith(".css")) {
           displayError("Please upload a CSS file (.css extension required).");
@@ -1380,7 +1581,11 @@
         reader.onload = function (e) {
           parent.postMessage(
             {
-              pluginMessage: { type: "parse-css", cssContent: e.target.result },
+              pluginMessage: {
+                type: "parse-css",
+                cssContent: e.target.result,
+                filename: file.name,
+              },
             },
             "*"
           );
@@ -1469,7 +1674,9 @@
               sourceCollectionType: sourceCollectionType,
               collectionChoice: collectionChoice,
               existingCollectionId: existingCollectionId,
-              jsonData: uploadedJsonData, // Pass JSON data to plugin
+              jsonData: uploadedJsonData,
+              sentiment: detectedSentiment,
+              mode: selectedMode,
             },
           },
           "*"
@@ -1567,6 +1774,9 @@
         availableCollections = [];
         selectedSourceCollection = null;
         uploadedJsonData = null;
+        detectedSentiment = null;
+        selectedMode = "replace";
+        currentFilename = null;
         document.getElementById("loading-text").textContent =
           "Parsing CSS file...";
 
@@ -1591,16 +1801,34 @@
           continueBtn.innerHTML = "Continue to Preview";
         }
 
+        // Hide sentiment indicator
+        document.getElementById("sentiment-indicator").classList.add("hidden");
+
+        // Reset mode to replace
+        document.querySelector(
+          'input[name="mode"][value="replace"]'
+        ).checked = true;
+
         showSection("collection-section");
         var fileInput = document.getElementById("file-input");
         if (fileInput) fileInput.value = "";
         var jsonFileInput = document.getElementById("json-file-input");
         if (jsonFileInput) jsonFileInput.value = "";
+
+        loadCollections();
       }
 
       function displayPreview(results) {
         document.getElementById("preview-total").textContent =
           results.totalFound;
+
+        // Show/hide mode toggle based on sentiment
+        var modeToggle = document.getElementById("mode-toggle");
+        if (detectedSentiment) {
+          modeToggle.classList.remove("hidden");
+        } else {
+          modeToggle.classList.add("hidden");
+        }
 
         populateVariableList(
           "preview-variables",
@@ -1608,6 +1836,13 @@
           results.variables,
           "preview"
         );
+
+        // Placeholder for removal preview - would need backend support
+        if (detectedSentiment && selectedMode === "replace") {
+          // This would show variables to be removed
+          // For now, just update the warning
+          updateRemovalWarning();
+        }
 
         // Enable apply button if collections are selected
         var sourceCollectionSelect = document.getElementById(
@@ -1637,7 +1872,9 @@
         document.getElementById("updated-count").textContent = results.updated
           ? results.updated.length
           : 0;
-        document.getElementById("removed-count").textContent = 0; // Or handle if you plan to send 'removed'
+        document.getElementById("removed-count").textContent = results.removed
+          ? results.removed.length
+          : 0;
         document.getElementById("failed-count").textContent = results.failed
           ? results.failed.length
           : 0;
@@ -1655,9 +1892,9 @@
           "updated"
         );
         populateVariableList(
-          "results-removed", // This section might remain hidden if not used
+          "results-removed",
           "results-removed-list",
-          [], // No 'removed' data is currently sent
+          results.removed || [],
           "removed"
         );
         populateVariableList(
@@ -1672,37 +1909,44 @@
         var section = document.getElementById(sectionId);
         var list = document.getElementById(listId);
 
-        if (items && items.length > 0) {
-          list.innerHTML = "";
+        // Always show the section
+        if (section) section.classList.remove("hidden");
 
+        // Clear the list
+        list.innerHTML = "";
+
+        // Update title with count (0 if empty)
+        var title = section.querySelector(".result-title");
+        var existingCount = title.querySelector(".result-count");
+        if (existingCount) {
+          existingCount.remove();
+        }
+
+        var countSpan = document.createElement("span");
+        countSpan.className = "result-count";
+        countSpan.textContent =
+          (items ? items.length : 0) +
+          " " +
+          (type === "preview"
+            ? "variables"
+            : type === "created"
+            ? "created"
+            : type === "updated"
+            ? "updated"
+            : type === "removed"
+            ? "removed"
+            : "failed");
+        title.appendChild(countSpan);
+
+        // Only populate if there are items
+        if (items && items.length > 0) {
           for (var i = 0; i < items.length; i++) {
             list.appendChild(createVariableItem(items[i], type));
           }
-
-          // Update title with count
-          var title = section.querySelector(".result-title");
-          var existingCount = title.querySelector(".result-count");
-          if (existingCount) {
-            existingCount.remove();
-          }
-          var countSpan = document.createElement("span");
-          countSpan.className = "result-count";
-          countSpan.textContent =
-            items.length +
-            " " +
-            (type === "preview"
-              ? "variables"
-              : type === "created"
-              ? "created"
-              : type === "updated"
-              ? "updated"
-              : "failed");
-          title.appendChild(countSpan);
-
-          if (section) section.classList.remove("hidden");
-        } else {
-          if (section) section.classList.add("hidden");
         }
+
+        // Start collapsed
+        section.classList.add("collapsed");
       }
 
       function createVariableItem(item, type) {
@@ -1714,6 +1958,14 @@
         nameDiv.className = "variable-name";
         nameDiv.textContent = item.variableName;
 
+        div.appendChild(nameDiv);
+
+        // For removed variables, we might not have reference info
+        if (type === "removed") {
+          // Just show the name for removed variables
+          return div;
+        }
+
         // Variable references
         var referencesDiv = document.createElement("div");
         referencesDiv.className = "variable-references";
@@ -1724,7 +1976,7 @@
         lightRef.innerHTML =
           '<span class="reference-label">Light:</span>' +
           '<span class="reference-value">' +
-          item.lightReference +
+          (item.lightReference || item.lightSourceVar || "N/A") +
           "</span>";
 
         // Dark mode reference
@@ -1733,7 +1985,7 @@
         darkRef.innerHTML =
           '<span class="reference-label">Dark:</span>' +
           '<span class="reference-value">' +
-          item.darkReference +
+          (item.darkReference || item.darkSourceVar || "N/A") +
           "</span>";
 
         referencesDiv.appendChild(lightRef);
@@ -1765,7 +2017,6 @@
           referencesDiv.appendChild(errorDiv);
         }
 
-        div.appendChild(nameDiv);
         div.appendChild(referencesDiv);
 
         return div;
@@ -1774,6 +2025,17 @@
       function displayError(message) {
         console.error("Plugin error:", message);
         document.getElementById("error-message").textContent = message;
+      }
+
+      function updateRemovalWarning() {
+        var warning = document.getElementById("removal-warning");
+        if (!detectedSentiment || selectedMode !== "replace") {
+          warning.classList.add("hidden");
+          return;
+        }
+
+        // Show warning - actual count would come from backend
+        warning.classList.remove("hidden");
       }
     </script>
   </body>

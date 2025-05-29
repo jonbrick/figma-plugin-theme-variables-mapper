@@ -1,297 +1,205 @@
-# Theme Variables Mapper Plugin Documentation
+# Theme Variables Mapper - Figma Plugin
 
-## Overview
+A Figma plugin that automates the creation of theme variables by parsing CSS files and mapping them to existing design tokens in your Figma libraries or local collections. Perfect for maintaining consistency between CSS-based design systems and Figma implementations.
 
-The Theme Variables Mapper is a Figma plugin that automates the creation of theme variables by parsing CSS files and mapping them to existing design tokens in your Figma libraries or local collections. It supports light/dark mode theming and maintains proper variable relationships through Figma's alias system.
+## 🚀 Quick Start
 
-## Features
+1. Install the plugin in Figma
+2. Select your source collection (where your design tokens live)
+3. Select your target collection (where theme variables will be created)
+4. Upload your CSS file with `@theme` definitions
+5. Review and apply the mappings
 
-- **CSS @theme Parsing**: Extracts theme variables from CSS files with light/dark mode definitions
-- **Flexible Source Collections**: Reference variables from either local collections or external shared libraries
-- **Automatic Mode Management**: Creates and configures Light/Dark modes in target collections
-- **Opacity Support**: Handles CSS opacity values (e.g., `--alpha(var(--color) / 90%)`)
-- **Bulk Processing**: Efficiently handles large sets of variables (tested with 75+ tokens)
-- **Smart Console Logging**: Collapsible groups for clean debugging output
+## ✨ Features
 
-## Technical Architecture
+- **🎨 CSS @theme Parsing**: Automatically extracts theme variables from CSS files
+- **🌓 Light/Dark Mode Support**: Creates proper mode-specific aliases
+- **📚 Library Support**: Reference variables from external libraries or local collections
+- **⚡ Performance Optimized**: Handles 500+ variables with optional JSON import
+- **🔍 Smart Validation**: Comprehensive error checking and reporting
+- **📊 Detailed Results**: Clear feedback on created, updated, and failed variables
 
-### Plugin Structure
+## 📋 CSS Format Requirements
+
+Your CSS file must follow this structure:
+
+```css
+/* 1. Theme variable definitions */
+@theme {
+  --color-primary: var(--primary);
+  --color-danger: var(--fill-danger);
+  --color-warning: var(--fill-warning);
+}
+
+/* 2. Light mode values */
+:root,
+.light {
+  --primary: var(--color-blue-500);
+  --fill-danger: var(--color-red-75);
+  --fill-warning: --alpha(var(--color-yellow-600) / 80%);
+}
+
+/* 3. Dark mode values */
+.dark {
+  --primary: var(--color-blue-400);
+  --fill-danger: --alpha(var(--color-red-500) / 15%);
+  --fill-warning: --alpha(var(--color-yellow-400) / 90%);
+}
+```
+
+### Supported Syntax
+
+#### Basic Variable References
+
+```css
+var(--color-red-500)    → color/red/500
+var(--color-black)      → color/black
+```
+
+#### Opacity Syntax
+
+```css
+--alpha(var(--color-red-700) / 90%)   → color/red/700_90
+--alpha(var(--color-red-500) / 5%)    → color/red/500_05
+--alpha(var(--color-black) / 25%)     → color/black_25
+```
+
+#### Special Cases
+
+- **100% opacity**: Drops the suffix → `color/red/500_100` becomes `color/red/500`
+- **Zero padding**: `5%` → `_05`, `15%` → `_15`
+- **Stepless colors**: `black` and `white` don't use numeric steps
+
+## 🔧 How It Works
+
+### Step 1: Collection Selection
+
+Choose your source collection (containing design tokens) and target collection (where theme variables will be created).
+
+### Step 2: CSS Upload
+
+Upload your CSS file containing `@theme` definitions and mode-specific values.
+
+### Step 3: Performance Optimization (Optional)
+
+For collections with 500+ variables, you can upload a JSON export for faster processing:
+
+1. In Figma, select your variables collection
+2. Use the plugin's variable extractor to export as JSON
+3. Upload the JSON file when prompted
+
+### Step 4: Preview & Apply
+
+Review the variables to be created and their mappings, then apply to create aliases in your target collection.
+
+## 🏗️ Technical Details
+
+### Variable Naming Convention
+
+| CSS Format                         | Figma Format       |
+| ---------------------------------- | ------------------ |
+| `--color-red-500`                  | `color/red/500`    |
+| `--fill-danger`                    | `fill/danger`      |
+| `--color-primary`                  | `color/primary`    |
+| `--color-red-500` with 90% opacity | `color/red/500_90` |
+
+### Mode Management
+
+The plugin automatically:
+
+- Detects existing Light/Dark modes in your target collection
+- Creates missing modes if needed
+- Handles case-insensitive mode names ("Light", "light", "LIGHT")
+- Renames default mode to "Light" if only one mode exists
+
+### Error Handling
+
+The plugin provides detailed error reporting for:
+
+- **Missing source variables**: When a referenced variable doesn't exist
+- **CSS parsing errors**: Invalid format or missing required blocks
+- **Permission issues**: Can't create variables in the target collection
+- **Import failures**: Library access problems
+
+## 📦 Plugin Structure
 
 ```
 theme-variables-mapper/
-├── manifest.json     # Plugin configuration
-├── code.js          # Main plugin logic (ES5 compatible)
-├── ui.html          # Plugin interface with inline CSS/JS
-└── README.md        # Documentation
+├── manifest.json      # Plugin configuration
+├── code.js           # Main plugin logic (ES5)
+├── ui.html           # Plugin UI with inline styles/scripts
+├── check-es5.js      # ES5 compatibility checker
+└── README.md         # This file
 ```
 
-### Technology Stack
+### ES5 Compatibility
 
-- **JavaScript**: ES5-compatible for Figma plugin environment
-- **Figma Plugin API**: For variable and collection management
-- **Promise-based**: Async handling for library imports
+This plugin is written in ES5 JavaScript for Figma compatibility:
 
-## How It Works
+- ✅ Traditional functions: `function() {}`
+- ✅ String concatenation: `"text " + variable`
+- ✅ var declarations: `var name = value`
+- ❌ No arrow functions, template literals, const/let, or destructuring
 
-### 1. CSS Input Format
+## 🐛 Troubleshooting
 
-The plugin expects CSS with this specific structure:
+### "Variable not found" errors
 
-```css
-/* Theme variable definitions */
-@theme {
-  --color-primary: var(--color-blue-500);
-  --color-danger: var(--fill-danger);
-  /* ... more theme variables ... */
-}
+- Ensure variable names match exactly (case-sensitive)
+- Check that opacity values use the correct format (`_05`, `_90`)
+- Verify the source collection contains all referenced variables
 
-/* Light mode values */
-:root,
-.light {
-  --color-blue-500: var(--color-blue-75);
-  --fill-danger: var(--color-red-75);
-  /* ... with optional opacity ... */
-  --stroke-danger: --alpha(var(--color-red-400) / 40%);
-}
+### Performance issues
 
-/* Dark mode values */
-.dark {
-  --color-blue-500: var(--color-blue-25);
-  --fill-danger: --alpha(var(--color-red-500) / 15%);
-  --stroke-danger: --alpha(var(--color-red-400) / 50%);
-}
-```
+- For 500+ variables, use the JSON import option
+- Check console logs for detailed processing information
+- Ensure stable internet connection for library imports
 
-### 2. Processing Flow
+### CSS parsing errors
 
-1. **Collection Loading**
+- Verify all three blocks exist: `@theme`, light mode, dark mode
+- Check for syntax errors in variable references
+- Ensure opacity syntax follows the `--alpha()` format
 
-   - Loads both library and local collections on startup
-   - UI automatically selects first library and first local collection
+## 🚦 Console Output
 
-2. **CSS Parsing**
-
-   - Extracts variables from `@theme` block
-   - Maps light/dark mode values
-   - Converts CSS naming (hyphens) to Figma naming (slashes)
-   - Handles opacity values by appending them with underscore
-
-3. **Variable Creation/Update**
-   - Creates theme variables in target collection
-   - Sets up proper aliases to source variables
-   - Handles library imports asynchronously
-   - Maintains light/dark mode values
-
-### 3. Variable Naming Convention
-
-| CSS Format                           | Figma Format       |
-| ------------------------------------ | ------------------ |
-| `--color-red-500`                    | `color/red/500`    |
-| `--color-red-500` (with 90% opacity) | `color/red/500_90` |
-| `--fill-danger`                      | `fill/danger`      |
-| `--color-primary`                    | `color/primary`    |
-
-## UI Components
-
-### Collection Selection Screen
+The plugin uses organized console logging:
 
 ```
-┌─────────────────────────────────────┐
-│  📚 Available Collections           │
-│  ├─ Library Collections             │
-│  │  └─ Design System → Colors      │
-│  └─ Local Collections               │
-│     └─ Theme Variables (Local)     │
-├─────────────────────────────────────┤
-│  [Source Collection ▼] [Target ▼]  │
-│  [Next: Upload CSS File]            │
-└─────────────────────────────────────┘
-```
-
-### CSS Upload Screen
-
-```
-┌─────────────────────────────────────┐
-│  📋 Selected Collections            │
-│  Source: Design System → Colors     │
-│  Target: Theme Variables (Local)    │
-├─────────────────────────────────────┤
-│     📁 Upload CSS File              │
-│     [Choose File]                   │
-└─────────────────────────────────────┘
-```
-
-### Preview Screen
-
-```
-┌─────────────────────────────────────┐
-│  [Cancel]  [Apply Changes]          │
-├─────────────────────────────────────┤
-│        75 theme variables found     │
-├─────────────────────────────────────┤
-│  ▼ 🎨 Variables to Create (75)     │
-│     color/fill/danger               │
-│     └─ Light: color/red/75          │
-│     └─ Dark: color/red/500_15       │
-└─────────────────────────────────────┘
-```
-
-### Results Screen
-
-```
-┌─────────────────────────────────────┐
-│  [Upload New File]  [Close]         │
-├─────────────────────────────────────┤
-│  ✅ Created: 70  ✏️ Updated: 5      │
-├─────────────────────────────────────┤
-│  ▶ ✅ Created Variables (70)        │
-│  ▶ ✏️ Updated Variables (5)         │
-│  ▶ ❌ Failed Variables (0)          │
-└─────────────────────────────────────┘
-```
-
-## Key Functions
-
-### code.js
-
-#### `loadCollections()`
-
-- Loads all available collections (library and local)
-- Sends collection data to UI for display
-- Handles async library loading with proper error handling
-
-#### `parseCSSContent(cssContent)`
-
-- Validates CSS content
-- Extracts theme variables using regex
-- Converts variable names to Figma format
-- Returns structured variable mappings
-
-#### `createVariablesFromCSS(...)`
-
-- Main orchestrator for variable creation
-- Routes to library or local processing based on source type
-- Manages target collection setup
-
-#### `processLibraryVariables(...)` / `processLocalVariables(...)`
-
-- Handles variable creation with proper alias setup
-- Library version uses async imports with Promise.all
-- Local version processes synchronously
-- Both use console.groupCollapsed for clean logging
-
-### ui.html
-
-#### `loadCollections()`
-
-- Sends message to plugin to load collections
-- Called on startup and reset
-
-#### `resetToUpload()`
-
-- Clears state and returns to collection selection
-- Calls `loadCollections()` to refresh and restore defaults
-
-#### `populateCollections(libs, locals)`
-
-- Populates dropdown menus
-- Auto-selects first library and first local collection
-
-#### `createVariableItem(item, type)`
-
-- Creates DOM elements for variable display
-- Shows different info based on preview/results context
-
-## Console Logging
-
-The plugin uses collapsible console groups for clean output:
-
-```javascript
-// Normal view
-📚 Loading all collections...
-✅ Found 1 local collections
-✅ Successfully loaded 1 library collections
+📚 Loading collections...
+✅ Found 2 library collections
 📄 Parsing CSS content...
 ✅ Found 75 theme variables
-▼ ⚡ Processing 75 variables...    // Click to expand
-✅ All library imports completed
+▼ ⚡ Processing 75 variables...    [Click to expand]
 📊 === FINAL RESULTS ===
 ✅ Created: 70
-✏️ Updated: 5
+🔄 Updated: 5
 ❌ Failed: 0
-
-// Expanded view shows all details
-▼ ⚡ Processing 75 variables...
-  🔄 Processing: color/fill/danger
-  ✏️ Updated: color/fill/danger
-  🔄 Processing: color/fill/primary
-  ✨ Created: color/fill/primary
-  // ... all 75 entries
 ```
 
-## Error Handling
-
-- **Collection Loading**: Falls back to local-only if libraries fail
-- **CSS Parsing**: Validates content and shows clear error messages
-- **Variable Creation**: Tracks and reports failed variables individually
-- **Library Imports**: Handles async failures gracefully
-
-## Best Practices
-
-1. **CSS Organization**
-
-   - Keep `@theme` block clean with only variable mappings
-   - Ensure all referenced variables exist in light/dark blocks
-   - Use consistent naming conventions
-
-2. **Collection Management**
-
-   - Organize source tokens in a dedicated library
-   - Create a separate local collection for theme variables
-   - Use descriptive collection names
-
-3. **Large Files**
-   - The plugin handles 75+ variables efficiently
-   - Results start collapsed for better overview
-   - Use console expansion to debug specific issues
-
-## Limitations
-
-- **ES5 Only**: Due to Figma plugin environment constraints
-- **Color Variables Only**: Currently supports only COLOR type variables
-- **Local Targets**: Can only create variables in local collections
-- **Opacity Format**: Must use `--alpha(var(--color) / X%)` syntax
-
-## Troubleshooting
-
-### Variables Not Found
-
-- Check exact naming in source collection
-- Verify the plugin's variable name conversion logic
-- Use console logs to see what names are being searched
-
-### Import Failures
-
-- Ensure you have access to the library
-- Check library publishing status
-- Verify variable keys haven't changed
-
-### Performance Issues
-
-- Large files are handled with async batching
-- Console logs are collapsed by default
-- UI uses accordions to manage long lists
-
-## Future Enhancements
+## 🔮 Future Enhancements
 
 - Support for additional variable types (spacing, typography)
-- Export functionality for created mappings
 - Batch processing of multiple CSS files
-- Variable validation and preview
-- Undo/redo functionality
+- Export functionality for created mappings
+- Undo/redo support
+- Custom naming pattern configuration
 
-## Version History
+## 📄 License
 
-- **1.0.0**: Initial release with core functionality
-- **1.1.0**: Added console grouping and UI improvements
-- **1.2.0**: Fixed async handling and button positioning
+This plugin is provided as-is for use with Figma's design system workflows.
+
+## 🤝 Contributing
+
+For bug reports or feature requests, please document:
+
+1. Your CSS file structure
+2. Collection setup (source/target)
+3. Console error messages
+4. Expected vs actual behavior
+
+---
+
+**Version**: 1.2.0  
+**Compatibility**: Figma Plugin API 1.0.0  
+**Requirements**: ES5 JavaScript environment
