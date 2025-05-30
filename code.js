@@ -47,6 +47,27 @@ figma.ui.onmessage = function (msg) {
       logSourceVariables(msg.sourceCollectionId);
       break;
 
+    case "hundred-percent-continue":
+      // User chose to continue with 100% variables
+      figma.ui.postMessage({
+        type: "parsing-complete",
+        success: true,
+        results: {
+          variables: msg.allVariables,
+          totalFound: msg.allVariables.length,
+          sentiment: msg.sentiment,
+        },
+      });
+      break;
+
+    case "hundred-percent-cancel":
+      // User chose to cancel and fix CSS
+      figma.ui.postMessage({
+        type: "hundred-percent-cancelled",
+        success: true,
+      });
+      break;
+
     case "create-variables":
       uploadedJsonData = msg.jsonData || null;
       selectedMode = msg.mode || "replace";
@@ -160,9 +181,7 @@ function logSourceVariables(sourceCollectionId) {
 
 function detectSentimentFromFilename(filename) {
   if (!filename) return null;
-  var match = filename.match(
-    /^(danger|warning|success|info|brand|neutral)\.css$/
-  );
+  var match = filename.match(/(danger|warning|success|info|brand|neutral)/);
   return match ? match[1] : null;
 }
 
@@ -413,7 +432,24 @@ function parseCSSContent(cssContent, filename) {
       }),
     });
 
-    // Send results to UI
+    // Check for 100% opacity variables before sending results
+    var hundredPercentVariables =
+      extractHundredPercentVariables(themeVariables);
+
+    if (hundredPercentVariables.length > 0) {
+      // Send 100% detection message instead of parsing complete
+      figma.ui.postMessage({
+        type: "hundred-percent-detected",
+        success: true,
+        variables: hundredPercentVariables,
+        totalThemeVars: themeVariables.length,
+        allVariables: themeVariables,
+        sentiment: sentiment,
+      });
+      return;
+    }
+
+    // Send normal results to UI
     figma.ui.postMessage({
       type: "parsing-complete",
       success: true,
@@ -516,6 +552,39 @@ function extractThemeVariables(cssContent) {
   return themeVariables;
 }
 
+function extractHundredPercentVariables(themeVariables) {
+  var hundredPercentVars = [];
+
+  for (var i = 0; i < themeVariables.length; i++) {
+    var variable = themeVariables[i];
+
+    // Check if light or dark reference ends with _100
+    if (
+      variable.lightReference &&
+      variable.lightReference.indexOf("_100") !== -1
+    ) {
+      hundredPercentVars.push({
+        variableName: variable.variableName,
+        lightReference: variable.lightReference,
+        darkReference: variable.darkReference,
+        type: "light",
+      });
+    } else if (
+      variable.darkReference &&
+      variable.darkReference.indexOf("_100") !== -1
+    ) {
+      hundredPercentVars.push({
+        variableName: variable.variableName,
+        lightReference: variable.lightReference,
+        darkReference: variable.darkReference,
+        type: "dark",
+      });
+    }
+  }
+
+  return hundredPercentVars;
+}
+
 function parseVariableDefinitions(cssBlock) {
   var variables = {};
   var varRegex =
@@ -530,7 +599,7 @@ function parseVariableDefinitions(cssBlock) {
     // Handle opacity values
     if (opacity) {
       if (opacity === "100") {
-        // Skip _100 suffix for full opacity
+        reference = reference + "_100"; // Preserve explicit 100% suffix
       } else if (opacity.length === 1) {
         reference = reference + "_0" + opacity;
       } else {
@@ -1166,9 +1235,9 @@ function processLibraryVariableStandard(
 function findVariableKeyInJson(jsonData, variableName) {
   console.log("🔍 JSON lookup for:", variableName);
 
-  // Normalize by removing _100 suffix if present
-  var normalizedName = variableName.replace(/_100$/, "");
-  console.log("📝 Normalized name:", normalizedName);
+  // Use variable name as-is (no normalization)
+  var normalizedName = variableName;
+  console.log("📝 Variable name:", normalizedName);
 
   // Handle stepless colors (black and white)
   if (isSteplessColor(normalizedName)) {
@@ -1186,7 +1255,6 @@ function findVariableKeyInJson(jsonData, variableName) {
     console.log("✅ Found exact match key:", jsonData[normalizedName].key);
     return jsonData[normalizedName].key;
   }
-
   // Try with/without color prefix
   var withPrefix = "color/" + normalizedName.replace(/^color\//, "");
   var withoutPrefix = normalizedName.replace(/^color\//, "");

@@ -943,6 +943,86 @@
         </div>
       </div>
 
+      <div id="hundred-percent-warning-section" class="section hidden">
+        <div class="selected-collections-info">
+          <h3>📋 Selected Collections</h3>
+          <div class="selected-collections-grid">
+            <div class="selected-collection">
+              <span class="selected-label">Source:</span>
+              <span id="hp-selected-source" class="selected-value"></span>
+            </div>
+            <div class="selected-collection">
+              <span class="selected-label">Target:</span>
+              <span id="hp-selected-target" class="selected-value"></span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="large-collection-warning"
+          style="
+            background: hsl(var(--warning) / 0.1);
+            border-color: hsl(var(--warning) / 0.3);
+          "
+        >
+          <h4>⚠️ 100% Opacity Variables Detected</h4>
+          <p>
+            Found <span id="hp-count">0</span> variables with explicit 100%
+            opacity suffixes. These will be mapped exactly as written.
+          </p>
+        </div>
+
+        <div class="result-group">
+          <h3 class="result-title">🎯 Variables with _100 Suffix</h3>
+          <div id="hp-variable-list" class="variable-list"></div>
+        </div>
+
+        <div
+          style="
+            background: hsl(var(--muted) / 0.3);
+            border: 1px solid hsl(var(--border));
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 16px;
+          "
+        >
+          <p>
+            <strong
+              >Most design systems use base colors (without _100) for full
+              opacity.</strong
+            >
+          </p>
+          <p style="margin-top: 8px">
+            If your source collection doesn't have _100 variants, these will
+            fail during import (which is normal behavior).
+          </p>
+
+          <details style="margin-top: 12px">
+            <summary style="cursor: pointer; font-weight: 600">
+              💡 Design System Best Practice
+            </summary>
+            <p style="margin-top: 8px; font-size: 12px; line-height: 1.4">
+              100% opacity = base color. Consider removing
+              <code>/100%</code> from your CSS for standard design system
+              conventions.
+            </p>
+            <p style="margin-top: 4px; font-size: 12px; line-height: 1.4">
+              Example: <code>var(--color-red-500)</code> instead of
+              <code>--alpha(var(--color-red-500) / 100%)</code>
+            </p>
+          </details>
+        </div>
+
+        <div class="actions">
+          <button id="hp-cancel-btn" class="btn btn-secondary">
+            Cancel & Fix CSS
+          </button>
+          <button id="hp-continue-btn" class="btn btn-primary">
+            Continue Anyway
+          </button>
+        </div>
+      </div>
+
       <div id="json-upload-section" class="section hidden">
         <div class="selected-collections-info">
           <h3>📋 Selected Collections</h3>
@@ -1367,6 +1447,34 @@
           );
         }
 
+        // 100% opacity warning button listeners
+        var hpCancelBtn = document.getElementById("hp-cancel-btn");
+        var hpContinueBtn = document.getElementById("hp-continue-btn");
+
+        if (hpCancelBtn) {
+          hpCancelBtn.addEventListener("click", function () {
+            parent.postMessage(
+              { pluginMessage: { type: "hundred-percent-cancel" } },
+              "*"
+            );
+          });
+        }
+
+        if (hpContinueBtn) {
+          hpContinueBtn.addEventListener("click", function () {
+            parent.postMessage(
+              {
+                pluginMessage: {
+                  type: "hundred-percent-continue",
+                  allVariables: currentResults ? currentResults.variables : [],
+                  sentiment: detectedSentiment,
+                },
+              },
+              "*"
+            );
+          });
+        }
+
         // Mode toggle listeners
         var modeRadios = document.querySelectorAll('input[name="mode"]');
         for (var i = 0; i < modeRadios.length; i++) {
@@ -1437,6 +1545,21 @@
                 displayError(message);
                 showSection("error-section");
               }
+              break;
+
+            case "hundred-percent-detected":
+              isProcessing = false;
+              if (success) {
+                displayHundredPercentWarning(pluginMessage);
+              } else {
+                displayError(message);
+                showSection("error-section");
+              }
+              break;
+
+            case "hundred-percent-cancelled":
+              // User cancelled, go back to upload
+              showSection("upload-section");
               break;
 
             case "creation-complete":
@@ -1768,12 +1891,14 @@
         var sections = [
           "collection-section",
           "upload-section",
+          "hundred-percent-warning-section",
           "json-upload-section",
           "loading-section",
           "preview-section",
           "results-section",
           "error-section",
         ];
+
         for (var i = 0; i < sections.length; i++) {
           var section = document.getElementById(sections[i]);
           if (section)
@@ -1923,13 +2048,18 @@
         var section = document.getElementById(sectionId);
         var list = document.getElementById(listId);
 
-        // Always show the section
-        if (section) section.classList.remove("hidden");
+        // Only show the section if there are items (except for preview mode)
+        if (type === "preview" || (items && items.length > 0)) {
+          section.classList.remove("hidden");
+        } else {
+          section.classList.add("hidden");
+          return; // Exit early if hiding the section
+        }
 
         // Clear the list
         list.innerHTML = "";
 
-        // Update title with count (0 if empty)
+        // Update title with count
         var title = section.querySelector(".result-title");
         var existingCount = title.querySelector(".result-count");
         if (existingCount) {
@@ -2039,6 +2169,58 @@
       function displayError(message) {
         console.error("Plugin error:", message);
         document.getElementById("error-message").textContent = message;
+      }
+
+      function displayHundredPercentWarning(pluginMessage) {
+        var variables = pluginMessage.variables;
+        var totalThemeVars = pluginMessage.totalThemeVars;
+        var allVariables = pluginMessage.allVariables;
+        var sentiment = pluginMessage.sentiment;
+
+        // Store the complete results for later use
+        currentResults = {
+          variables: allVariables,
+          totalFound: totalThemeVars,
+          sentiment: sentiment,
+        };
+
+        // Update count
+        document.getElementById("hp-count").textContent = variables.length;
+
+        // Update selected collections info
+        var sourceIdx = document.getElementById(
+          "source-collection-select"
+        ).selectedIndex;
+        var targetIdx = document.getElementById(
+          "target-collection-select"
+        ).selectedIndex;
+        var sourceOption = document.getElementById("source-collection-select")
+          .options[sourceIdx];
+        var targetOption = document.getElementById("target-collection-select")
+          .options[targetIdx];
+
+        var sourceCollection = availableCollections.find(function (c) {
+          return c.id === sourceOption.value;
+        });
+
+        var displayName = sourceCollection
+          ? sourceCollection.displayName
+          : sourceOption.text;
+        var targetName = targetOption.text;
+
+        document.getElementById("hp-selected-source").innerHTML = displayName;
+        document.getElementById("hp-selected-target").innerHTML = targetName;
+
+        // Populate variable list
+        var list = document.getElementById("hp-variable-list");
+        list.innerHTML = "";
+
+        for (var i = 0; i < variables.length; i++) {
+          list.appendChild(createVariableItem(variables[i], "preview"));
+        }
+
+        // Show the warning section
+        showSection("hundred-percent-warning-section");
       }
 
       function updateRemovalWarning() {
