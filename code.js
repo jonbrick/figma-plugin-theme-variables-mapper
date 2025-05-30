@@ -517,19 +517,24 @@ function extractThemeVariables(cssContent) {
       dark: Object.keys(darkVars).length,
     });
 
-    // Create mappings for variables that exist in theme, light, and dark
+    // Create mappings for variables that exist in theme and at least one mode
     for (var varName in themeVars) {
-      if (lightVars[varName] && darkVars[varName]) {
+      if (lightVars[varName] || darkVars[varName]) {
         var finalVarName = themeVars[varName];
-        var lightRef = convertCSSVariableToFigmaName(lightVars[varName]);
-        var darkRef = convertCSSVariableToFigmaName(darkVars[varName]);
+
+        // Use fallback: if one mode is missing, use the other mode's value
+        var lightValue = lightVars[varName] || darkVars[varName];
+        var darkValue = darkVars[varName] || lightVars[varName];
+
+        var lightRef = convertCSSVariableToFigmaName(lightValue);
+        var darkRef = convertCSSVariableToFigmaName(darkValue);
 
         var variable = {
           variableName: finalVarName,
           lightReference: lightRef,
           darkReference: darkRef,
-          lightValue: lightVars[varName],
-          darkValue: darkVars[varName],
+          lightValue: lightValue,
+          darkValue: darkValue,
         };
 
         themeVariables.push(variable);
