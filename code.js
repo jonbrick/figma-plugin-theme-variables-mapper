@@ -108,13 +108,6 @@ function createCollectionInfo(collection, variables, type, error) {
 
 // ===== PROCESS LIBRARY COLLECTION =====
 function processLibraryCollection(collection) {
-  console.log("Processing library collection:", {
-    name: collection.name,
-    key: collection.key,
-    id: collection.id,
-    libraryName: collection.libraryName,
-  });
-
   // Track imported variables for cleanup
   var importedVariableIds = [];
 
@@ -122,11 +115,6 @@ function processLibraryCollection(collection) {
   return figma.teamLibrary
     .getVariablesInLibraryCollectionAsync(collection.key)
     .then(function (variables) {
-      console.log("Initial library variables:", {
-        total: variables.length,
-        collectionName: collection.name,
-      });
-
       // Try importing all variables to see if we get more
       var importPromises = variables.map(function (variable) {
         return figma.variables
@@ -154,13 +142,6 @@ function processLibraryCollection(collection) {
           return r.imported;
         });
 
-        console.log("Import results:", {
-          totalAttempted: results.length,
-          successfulImports: successfulImports.length,
-          failedImports: results.length - successfulImports.length,
-          importedIds: importedVariableIds,
-        });
-
         // Get all imported variables directly using their IDs
         var importedVars = importedVariableIds
           .map(function (id) {
@@ -170,19 +151,11 @@ function processLibraryCollection(collection) {
             return v !== null;
           });
 
-        console.log("Variables after import:", {
-          total: importedVars.length,
-          colorVars: importedVars.filter(function (v) {
-            return v.name.indexOf("color/") === 0;
-          }).length,
-          blackVars: importedVars
-            .filter(function (v) {
-              return v.name.indexOf("color/black") === 0;
-            })
-            .map(function (v) {
-              return v.name;
-            }),
-        });
+        console.log(
+          "📚 Library Collection Loaded: " +
+            importedVars.length +
+            " variables available"
+        );
 
         // Store imported IDs for cleanup
         figma.clientStorage
@@ -234,13 +207,6 @@ function cleanupImportedVariables() {
               e.message.includes("Removing this node is not allowed")
             ) {
               // This is expected if the variable is now aliased
-              console.log(
-                "ℹ️ Kept variable '" +
-                  variable.name +
-                  "' (ID: " +
-                  id +
-                  ") as it is currently in use (likely aliased)."
-              );
               keptCount++;
             } else {
               // Log other unexpected errors
@@ -254,11 +220,7 @@ function cleanupImportedVariables() {
       });
 
       if (keptCount > 0) {
-        console.log(
-          "ℹ️",
-          keptCount,
-          "variables were kept because they are in use."
-        );
+        console.log("ℹ️ Kept " + keptCount + " variables that are in use");
       }
       console.log("✅ Cleanup routine finished.");
 
@@ -408,10 +370,13 @@ function parseCSSContent(cssContent, filename) {
       return;
     }
 
-    console.log("✅ Found " + themeVariables.length + " theme variables");
-    if (sentiment) {
-      console.log("🎯 Detected sentiment:", sentiment);
-    }
+    console.log("🎨 New variables:", {
+      total: themeVariables.length,
+      variables: themeVariables.map(function (v) {
+        return v.variableName;
+      }),
+      sentiment: sentiment || "none",
+    });
 
     // Send results to UI
     figma.ui.postMessage({
@@ -443,9 +408,6 @@ function extractThemeVariables(cssContent) {
     symbol: {},
   };
 
-  // Log initial state
-  console.log("📊 Initial variableMap:", variableMap);
-
   try {
     // Find @theme block
     var themeRegex = /@theme[^{]*\{([^}]+)\}/;
@@ -467,12 +429,6 @@ function extractThemeVariables(cssContent) {
       themeVars[varReference] = "color/" + colorName.replace(/-/g, "/");
     }
 
-    console.log(
-      "🎨 Found " +
-        Object.keys(themeVars).length +
-        " theme variable definitions"
-    );
-
     // Find light and dark mode blocks
     var lightMatch = cssContent.match(/(?::root|\.light)\s*\{([^}]+)\}/);
     var darkMatch = cssContent.match(/\.dark\s*\{([^}]+)\}/);
@@ -485,11 +441,6 @@ function extractThemeVariables(cssContent) {
     // Parse mode definitions
     var lightVars = parseVariableDefinitions(lightMatch[1]);
     var darkVars = parseVariableDefinitions(darkMatch[1]);
-
-    console.log(
-      "💡 Light mode: " + Object.keys(lightVars).length + " variables"
-    );
-    console.log("🌙 Dark mode: " + Object.keys(darkVars).length + " variables");
 
     // Create mappings for variables that exist in theme, light, and dark
     for (var varName in themeVars) {
@@ -638,121 +589,34 @@ function createVariablesFromCSS(
       variables: variablesList,
     });
 
+    if (sourceCollection && sourceCollection.variableCount >= 500) {
+      console.log(
+        "⚡ Large source collection selected:",
+        sourceCollection.displayName +
+          " (" +
+          sourceCollection.variableCount +
+          " variables)"
+      );
+    }
+
     // Find source collection from our loaded data
     var sourceCollection = null;
     var targetCollection = null;
 
-    // Get collections from our loaded data
-    if (collectionsLoaded) {
-      console.log("🔍 Collections are loaded, proceeding with lookup...");
+    // Use already-loaded collections from startup
+    console.log("🎯 Using pre-loaded collections for variable creation");
 
-      // Find source collection
-      var allCollections = figma.variables.getLocalVariableCollections();
-      console.log("📚 Found local collections:", allCollections.length);
-
-      var localCollections = allCollections.map(function (collection) {
-        console.log("Processing local collection:", collection.name);
-        var variables = figma.variables
-          .getLocalVariables()
-          .filter(function (v) {
-            return v.variableCollectionId === collection.id;
-          });
-        return createCollectionInfo(collection, variables, "local");
-      });
-
-      // Get library collections
-      console.log("🌐 Loading library collections...");
-      figma.teamLibrary
-        .getAvailableLibraryVariableCollectionsAsync()
-        .then(function (libraryCollections) {
-          console.log(
-            "📚 Found library collections:",
-            libraryCollections.length
-          );
-          return Promise.all(libraryCollections.map(processLibraryCollection));
-        })
-        .then(function (libraryInfo) {
-          console.log("✅ Library collections processed");
-          var validLibraries = libraryInfo.filter(function (lib) {
-            return lib !== null;
-          });
-          console.log("✅ Valid libraries:", validLibraries.length);
-          var allCollections = validLibraries.concat(localCollections);
-
-          // Find our collections
-          sourceCollection = allCollections.find(function (c) {
-            return c.id === selectedSourceCollectionId;
-          });
-          targetCollection = localCollections.find(function (c) {
-            return c.id === existingCollectionId;
-          });
-
-          console.log("🎯 Collection lookup results:", {
-            sourceFound: !!sourceCollection,
-            targetFound: !!targetCollection,
-            sourceId: selectedSourceCollectionId,
-            targetId: existingCollectionId,
-          });
-
-          if (!sourceCollection || !targetCollection) {
-            throw new Error(
-              !sourceCollection
-                ? "Source collection not found"
-                : "Target collection not found"
-            );
-          }
-
-          // Log collection details
-          console.log("📊 Collections found:", {
-            source: {
-              id: sourceCollection.id,
-              type: sourceCollection.type,
-              name: sourceCollection.displayName,
-              variables: sourceCollection.variableCount,
-              modes: sourceCollection.modeCount,
-            },
-            target: {
-              id: targetCollection.id,
-              name:
-                targetCollection.displayName || targetCollection.collectionName,
-              variables: targetCollection.variableCount,
-              modes: targetCollection.modeCount,
-            },
-          });
-
-          console.log("🚀 Starting variable processing...");
-          // Process variables with full context
-          processVariables(
-            variablesToCreate,
-            sourceCollection,
-            targetCollection,
-            sourceCollectionType,
-            collectionChoice,
-            [], // created
-            [], // updated
-            [], // failed
-            [] // removed
-          );
-        })
-        .catch(function (error) {
-          console.error("❌ Collection Loading Error:", {
-            error: error.message,
-            stack: error.stack,
-            context: {
-              sourceId: selectedSourceCollectionId,
-              targetId: existingCollectionId,
-            },
-          });
-          figma.ui.postMessage({
-            type: "creation-complete",
-            success: false,
-            message: error.message,
-          });
-        });
-    } else {
-      console.error("❌ Collections not loaded!");
-      throw new Error("Collections not loaded. Please refresh and try again.");
-    }
+    // Collections are already loaded and available - just process variables directly
+    processVariables(
+      variablesToCreate,
+      selectedSourceCollectionId,
+      sourceCollectionType,
+      existingCollectionId,
+      [], // created
+      [], // updated
+      [], // failed
+      [] // removed
+    );
   } catch (error) {
     console.error("❌ Variable Creation Error:", {
       error: error.message,
@@ -1156,6 +1020,7 @@ function processLocalVariables(
 }
 
 // ===== PROCESS LIBRARY VARIABLES WITH JSON =====
+
 function processLibraryVariablesWithJson(
   variablesToCreate,
   jsonData,
@@ -1168,51 +1033,19 @@ function processLibraryVariablesWithJson(
   failed,
   removed
 ) {
-  console.log("🔄 Starting JSON-based variable processing:", {
-    toCreate: variablesToCreate.length,
+  console.log("🔄 Processing variables:", {
+    total: variablesToCreate.length,
+    variables: variablesToCreate.map(function (v) {
+      return v.variableName;
+    }),
     jsonVars: Object.keys(jsonData).length,
     targetCollection: targetCollection.name,
-    existingVars: Object.keys(existingVariables).length,
-    lightMode: lightModeId,
-    darkMode: darkModeId,
   });
 
-  // Log first few variables to be created for debugging
-  console.log(
-    "📝 First few variables to create:",
-    variablesToCreate.slice(0, 3).map(function (v) {
-      return {
-        name: v.variableName,
-        light: v.lightReference,
-        dark: v.darkReference,
-      };
-    })
-  );
-
-  // Log first few JSON entries for debugging
-  var firstFewJsonKeys = Object.keys(jsonData).slice(0, 3);
-  var firstFewEntries = {};
-  for (var k = 0; k < firstFewJsonKeys.length; k++) {
-    var key = firstFewJsonKeys[k];
-    firstFewEntries[key] = jsonData[key];
-  }
-  console.log("🔍 First few JSON entries:", firstFewEntries);
-
   var promises = [];
-  var processedCount = 0;
-  var startTime = Date.now();
 
-  // Create a promise for each variable
   for (var i = 0; i < variablesToCreate.length; i++) {
     var item = variablesToCreate[i];
-    console.log(
-      "📝 Processing variable " +
-        (i + 1) +
-        "/" +
-        variablesToCreate.length +
-        ":",
-      item.variableName
-    );
 
     var promise = processLibraryVariableWithJson(
       item,
@@ -1224,49 +1057,23 @@ function processLibraryVariablesWithJson(
       created,
       updated,
       failed
-    ).then(function () {
-      processedCount++;
-      if (processedCount % 10 === 0) {
-        var elapsed = (Date.now() - startTime) / 1000;
-        var rate = processedCount / elapsed;
-        console.log(
-          "✅ Progress: " +
-            processedCount +
-            "/" +
-            variablesToCreate.length +
-            " variables (" +
-            rate.toFixed(1) +
-            " vars/sec)"
-        );
-      }
-    });
+    );
 
     promises.push(promise);
   }
 
-  // Wait for all imports to complete
   Promise.all(promises)
     .then(function () {
-      var totalTime = (Date.now() - startTime) / 1000;
-      console.log("✅ All JSON-based library imports completed:", {
-        total: variablesToCreate.length,
+      console.log("✅ JSON Processing Complete:", {
         created: created.length,
         updated: updated.length,
         failed: failed.length,
         removed: removed.length,
-        timeSeconds: totalTime.toFixed(1),
-        ratePerSecond: (variablesToCreate.length / totalTime).toFixed(1),
       });
       sendResults(created, updated, failed, removed, variablesToCreate.length);
     })
     .catch(function (error) {
-      console.error("❌ JSON Library Import Error:", {
-        error: error.message,
-        stack: error.stack,
-        processed: processedCount,
-        total: variablesToCreate.length,
-        timeSeconds: ((Date.now() - startTime) / 1000).toFixed(1),
-      });
+      console.error("❌ JSON Processing Error:", error.message);
       sendResults(created, updated, failed, removed, variablesToCreate.length);
     });
 }
@@ -1284,10 +1091,10 @@ function processLibraryVariableWithJson(
 ) {
   return new Promise(function (resolve) {
     try {
-      console.log("🔍 Looking up variable:", {
-        name: item.variableName,
-        light: item.lightReference,
-        dark: item.darkReference,
+      console.log("⚠️ Key not found:", {
+        variable: item.variableName,
+        lightFound: !!lightKey,
+        darkFound: !!darkKey,
       });
 
       // Find variable keys in JSON data
@@ -1313,18 +1120,12 @@ function processLibraryVariableWithJson(
         return;
       }
 
-      console.log("✅ Found keys:", {
-        variable: item.variableName,
-        light: lightKey,
-        dark: darkKey,
-      });
-
       // Get or create target variable
       var targetVariable = existingVariables[item.variableName];
       var wasUpdated = !!targetVariable;
 
       if (!targetVariable) {
-        console.log("➕ Creating new variable:", item.variableName);
+        console.log("🔄 Updating existing variable:", item.variableName);
         targetVariable = figma.variables.createVariable(
           item.variableName,
           targetCollection,
@@ -1336,7 +1137,6 @@ function processLibraryVariableWithJson(
       }
 
       // Import library variables using keys from JSON
-      console.log("🔄 Importing library variables...");
       var lightPromise = figma.variables.importVariableByKeyAsync(lightKey);
       var darkPromise =
         lightKey === darkKey
@@ -1347,12 +1147,6 @@ function processLibraryVariableWithJson(
         .then(function (imported) {
           var importedLight = imported[0];
           var importedDark = imported[1];
-
-          console.log("✅ Variables imported:", {
-            variable: item.variableName,
-            light: importedLight.name,
-            dark: importedDark.name,
-          });
 
           // Create aliases
           var lightAlias = figma.variables.createVariableAlias(importedLight);
@@ -1377,15 +1171,9 @@ function processLibraryVariableWithJson(
             created.push(result);
           }
 
-          console.log("✅ Variable processed successfully:", item.variableName);
           resolve();
         })
         .catch(function (error) {
-          console.error("❌ Import failed:", {
-            variable: item.variableName,
-            error: error.message,
-          });
-
           failed.push({
             variableName: item.variableName,
             lightReference: item.lightReference,
@@ -1395,11 +1183,6 @@ function processLibraryVariableWithJson(
           resolve();
         });
     } catch (error) {
-      console.error("❌ Processing error:", {
-        variable: item.variableName,
-        error: error.message,
-      });
-
       failed.push({
         variableName: item.variableName,
         lightReference: item.lightReference,
@@ -1413,20 +1196,11 @@ function processLibraryVariableWithJson(
 
 // ===== FIND VARIABLE KEY IN JSON DATA =====
 function findVariableKeyInJson(jsonData, variableName) {
-  console.log("🔍 Looking for variable key in JSON:", {
-    name: variableName,
-    totalJsonVars: Object.keys(jsonData).length,
-    firstFewKeys: Object.keys(jsonData).slice(0, 3),
-  });
-
   // Normalize by removing _100 suffix if present
   var normalizedName = variableName.replace(/_100$/, "");
-  console.log("📝 Normalized name:", normalizedName);
 
   // Handle stepless colors (like black and white) that don't have number steps
   if (isSteplessColor(normalizedName)) {
-    console.log("⚪ Handling stepless color:", normalizedName);
-
     // Check if someone is trying to use a step with black/white
     var parts = normalizedName.split("/");
     if (parts.length > 2) {
@@ -1446,20 +1220,12 @@ function findVariableKeyInJson(jsonData, variableName) {
     console.log("🔄 Trying simplified path:", simplePath);
 
     if (jsonData[simplePath]) {
-      console.log("✅ Found stepless color key:", {
-        path: simplePath,
-        key: jsonData[simplePath].key,
-      });
       return jsonData[simplePath].key;
     }
   }
 
   // Try exact match first
   if (jsonData[normalizedName]) {
-    console.log("✅ Found exact match key:", {
-      name: normalizedName,
-      key: jsonData[normalizedName].key,
-    });
     return jsonData[normalizedName].key;
   }
 
@@ -1467,28 +1233,14 @@ function findVariableKeyInJson(jsonData, variableName) {
   var withPrefix = "color/" + normalizedName.replace(/^color\//, "");
   var withoutPrefix = normalizedName.replace(/^color\//, "");
 
-  console.log("🔍 Trying alternative paths:", {
-    withPrefix: withPrefix,
-    withoutPrefix: withoutPrefix,
-  });
-
   if (jsonData[withPrefix]) {
-    console.log("✅ Found prefixed key:", {
-      path: withPrefix,
-      key: jsonData[withPrefix].key,
-    });
     return jsonData[withPrefix].key;
   }
 
   if (jsonData[withoutPrefix]) {
-    console.log("✅ Found unprefixed key:", {
-      path: withoutPrefix,
-      key: jsonData[withoutPrefix].key,
-    });
     return jsonData[withoutPrefix].key;
   }
 
-  console.log("❌ No key found for variable:", variableName);
   return null;
 }
 

@@ -40,24 +40,66 @@ An automated plugin that:
 
 #### Required CSS Structure
 
+The plugin supports both simple and complex CSS structures:
+
+**Complex Structure (danger.css) - With States:**
+
 ```css
-/* Theme variable definitions */
-@theme {
-  --color-fill-danger: var(--fill-danger);
-  --color-stroke-danger: var(--stroke-danger);
+/* Theme variable definitions with states */
+@theme inline {
+  --color-fill-danger-normal-default: var(--fill-danger-normal-default);
+  --color-fill-danger-normal-hover: var(--fill-danger-normal-hover);
+  --color-fill-danger-normal-focus: var(--fill-danger-normal-focus);
+  --color-fill-danger-normal-active: var(--fill-danger-normal-active);
+  --color-fill-danger-normal-disabled: var(--fill-danger-normal-disabled);
 }
 
 /* Light mode values */
 :root,
 .light {
-  --fill-danger: var(--color-red-75);
-  --stroke-danger: --alpha(var(--color-red-400) / 40%);
+  --fill-danger-normal-default: var(--color-red-75);
+  --fill-danger-normal-hover: --alpha(var(--color-red-100) / 90%);
+  --fill-danger-normal-focus: --alpha(var(--color-red-100) / 90%);
+  --fill-danger-normal-active: --alpha(var(--color-red-200) / 95%);
+  --fill-danger-normal-disabled: --alpha(var(--color-red-75) / 25%);
 }
 
 /* Dark mode values */
 .dark {
-  --fill-danger: --alpha(var(--color-red-500) / 15%);
-  --stroke-danger: --alpha(var(--color-red-400) / 50%);
+  --fill-danger-normal-default: --alpha(var(--color-red-500) / 15%);
+  --fill-danger-normal-hover: --alpha(var(--color-red-400) / 20%);
+  --fill-danger-normal-focus: --alpha(var(--color-red-400) / 20%);
+  --fill-danger-normal-active: --alpha(var(--color-red-300) / 25%);
+  --fill-danger-normal-disabled: --alpha(var(--color-red-500) / 10%);
+}
+```
+
+**Simple Structure (warning.css) - No States:**
+
+```css
+/* Theme variable definitions without states */
+@theme inline {
+  --color-fill-warning: var(--fill-warning);
+  --color-stroke-warning: var(--stroke-warning);
+  --color-a11y-warning: var(--a11y-warning);
+  --color-symbol-warning: var(--symbol-warning);
+}
+
+/* Light mode values */
+:root,
+.light {
+  --fill-warning: var(--color-yellow-75);
+  --stroke-warning: --alpha(var(--color-amber-500) / 50%);
+  --a11y-warning: --alpha(var(--color-amber-800) / 90%);
+  --symbol-warning: --alpha(var(--color-amber-500) / 90%);
+}
+
+/* Dark mode values */
+.dark {
+  --fill-warning: --alpha(var(--color-yellow-500) / 15%);
+  --stroke-warning: --alpha(var(--color-amber-500) / 50%);
+  --a11y-warning: --alpha(var(--color-amber-200) / 90%);
+  --symbol-warning: --alpha(var(--color-amber-500) / 90%);
 }
 ```
 
@@ -67,8 +109,26 @@ An automated plugin that:
 - **Opacity Handling**: `--alpha(var(--color) / X%)` → `color/name_XX` format
 - **Special Cases**:
   - 100% opacity: drops suffix (`color/red/500_100` → `color/red/500`)
-  - Stepless colors: `black` and `white` without numeric steps
   - Zero-padding: `5%` → `_05`, `90%` → `_90`
+
+#### Tailwind Source Variable Patterns
+
+All referenced values from Tailwind follow the pattern: `color/[color]/[step][_opacity]`
+
+**Examples**:
+
+- `color/red/500` (base color)
+- `color/red/500_90` (with 90% opacity)
+- `color/amber/300_25` (with 25% opacity)
+
+**Exception - Stepless Colors**:
+
+- `color/black` (no step value)
+- `color/white` (no step value)
+- `color/black_50` (black with 50% opacity)
+- `color/white_10` (white with 10% opacity)
+
+The plugin automatically handles these stepless colors without requiring numeric steps.
 
 ### 3. Sentiment-Based Variable Management
 
@@ -109,34 +169,82 @@ When a CSS file is uploaded with a detected sentiment (e.g., "danger"):
 - **Replace Mode (Recommended)**: Keeps variables in sync with CSS by creating, updating, AND removing
 - **Merge Mode**: Only creates and updates, never removes existing variables
 
-#### Example Workflow
+#### Example Workflows
 
-**Initial State**: Target collection has 75 variables, 10 contain "danger"
+**Example 1 - Complex CSS (danger.css)**
+
+**Initial State**: Target collection has 85 variables, 10 contain "danger"
 
 ```
 color/fill/danger (old format)
 color/fill/danger/emphasis (old format)
 color/stroke/danger
-... 7 more danger variables
-... 65 non-danger variables
+color/a11y/danger
+color/symbol/danger
+... 80 other variables
 ```
 
-**Upload danger.css**: Defines 26 danger variables
+**Upload danger.css**: Defines 26 danger variables with states
 
 ```
 color/fill/danger/normal/default
-color/fill/danger/emphasis/default
-... 24 more
+color/fill/danger/normal/hover
+color/fill/danger/normal/focus
+color/fill/danger/normal/active
+color/fill/danger/normal/disabled
+... 21 more with similar patterns
 ```
 
 **Result in Replace Mode**:
 
-- ✅ Created: 23 new variables
-- 🔄 Updated: 3 existing variables
-- 🗑️ Removed: 7 orphaned danger variables
-- Unchanged: 65 non-danger variables (not reported)
+- ✅ Created: 0 new variables (all already existed)
+- 🔄 Updated: 6 existing variables
+- 🗑️ Removed: 5 orphaned danger variables (old format)
+- ⚠️ Failed: 20 (missing opacity variants in source)
+- Unchanged: 75 non-danger variables (not reported)
 
-### 4. Performance Optimization
+**Example 2 - Simple CSS (warning.css)**
+
+**Initial State**: Target collection has 0 warning variables
+
+**Upload warning.css**: Defines 4 warning variables without states
+
+```
+color/fill/warning
+color/stroke/warning
+color/a11y/warning
+color/symbol/warning
+```
+
+**Result in Replace Mode**:
+
+- ✅ Created: 4 new variables
+- 🔄 Updated: 0 existing variables
+- 🗑️ Removed: 0 orphaned variables
+- ⚠️ Failed: 0 (all source variables found)
+- No state variations needed
+
+### Variable Structure Flexibility
+
+The plugin handles both simple and complex variable structures:
+
+#### Complex Variables (State-Based)
+
+Used for interactive elements that need hover, focus, active, and disabled states:
+
+- Pattern: `color/[type]/[sentiment]/[intensity]/[state]`
+- Example: `color/fill/danger/normal/hover`
+- Total variations: 5-6 per base variable
+
+#### Simple Variables (Stateless)
+
+Used for static elements or when states are handled differently:
+
+- Pattern: `color/[type]/[sentiment]`
+- Example: `color/fill/warning`
+- Total variations: 1 per base variable
+
+The plugin automatically handles both patterns without configuration.
 
 #### Large Collection Detection
 
@@ -172,6 +280,21 @@ color/fill/danger/emphasis/default
 - Maintains proper light/dark mode references
 - Handles library variable imports asynchronously
 - Updates existing variables or creates new ones
+
+#### Variable Creation Process Results
+
+The plugin gracefully handles multiple outcomes:
+
+- **Created**: New variables successfully created with aliases
+- **Updated**: Existing variables updated with new references
+- **Removed**: Orphaned sentiment variables removed (Replace mode only)
+- **Failed**: Source variables not found - reported but don't stop processing
+
+**Important**: Failed imports (missing source variables) are expected when:
+
+- Opacity variants don't exist in the source library
+- Source collection doesn't contain all referenced variables
+- These failures are logged but don't prevent other variables from being processed
 
 ## User Interface
 
@@ -213,7 +336,8 @@ color/fill/danger/emphasis/default
   - ⚠️ Failed variables
 - Detailed collapsible lists for each category
 - Clear error messages for failures
-- No display of ignored/unchanged variables
+- All categories display even if empty (showing "0 created", etc.)
+- Collapsible accordions for organized viewing
 
 ## Technical Architecture
 
@@ -247,7 +371,14 @@ var config = { mode: "light" };
 - Destructuring: `{a, b} = obj`
 - for...of loops
 - Spread operator: `...array`
-- Browser-specific console methods: `console.groupCollapsed()`, `console.groupEnd()`
+- Default parameters
+- Object method shorthand
+
+### Console Compatibility
+
+- Avoid browser-specific console methods: `console.groupCollapsed()`, `console.groupEnd()`
+- Use only: `console.log()`, `console.error()`, `console.warn()`
+- Figma's environment doesn't support all browser console features
 
 ### Core Functions
 
@@ -299,8 +430,6 @@ console.log("✅ Created: color/fill/danger");
 console.log("📊 === FINAL RESULTS ===");
 ```
 
-Note: Avoid `console.groupCollapsed()` and `console.groupEnd()` as they're not supported in Figma's environment.
-
 ## API Integration
 
 ### Variable Import Process
@@ -347,6 +476,7 @@ if (detectedSentiment && selectedMode === "replace") {
 - ✅ Provide clear success/failure reporting
 - ✅ Optimize performance for large collections (500+ variables)
 - ✅ Maintain ES5 compatibility throughout
+- ✅ Handle missing source variables gracefully without crashing
 
 ## Error Handling
 
@@ -370,6 +500,7 @@ if (detectedSentiment && selectedMode === "replace") {
 - Collection selection validation
 - Network/async operation failures
 - User-friendly error messages
+- Results display even with failed imports
 
 ## Future Enhancements
 
@@ -380,9 +511,10 @@ if (detectedSentiment && selectedMode === "replace") {
 5. **Additional Variable Types**: Support for spacing, typography variables
 6. **Custom Naming Patterns**: Configurable name transformations
 7. **Sentiment Pattern Configuration**: Allow custom sentiment matching rules
+8. **Console Log Management**: Configurable verbosity levels
 
 ---
 
-**Document Version**: 4.0  
-**Status**: Implementation with minor fixes needed  
+**Document Version**: 5.0  
+**Status**: Production Ready  
 **Compatibility**: Figma Plugin API 1.0.0, ES5 JavaScript

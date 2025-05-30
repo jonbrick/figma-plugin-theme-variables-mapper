@@ -17,7 +17,8 @@ A Figma plugin that automates the creation of theme variables by parsing CSS fil
 - **📚 Library Support**: Reference variables from external libraries or local collections
 - **⚡ Performance Optimized**: Handles 500+ variables with optional JSON import
 - **🔍 Smart Validation**: Comprehensive error checking and reporting
-- **📊 Detailed Results**: Clear feedback on created, updated, and failed variables
+- **📊 Detailed Results**: Clear feedback on created, updated, removed, and failed variables
+- **🔄 Variable Lifecycle Management**: Replace mode removes orphaned variables
 
 ## 📋 CSS Format Requirements
 
@@ -78,7 +79,7 @@ Choose your source collection (containing design tokens) and target collection (
 
 ### Step 2: CSS Upload
 
-Upload your CSS file containing `@theme` definitions and mode-specific values.
+Upload your CSS file containing `@theme` definitions and mode-specific values. The filename should indicate the sentiment (e.g., `danger.css`, `warning.css`).
 
 ### Step 3: Performance Optimization (Optional)
 
@@ -112,16 +113,51 @@ The plugin automatically:
 - Handles case-insensitive mode names ("Light", "light", "LIGHT")
 - Renames default mode to "Light" if only one mode exists
 
-### Error Handling
+### Sentiment-Based Variable Management
 
-The plugin provides detailed error reporting for:
+For files with sentiment detection (danger.css, warning.css, etc.):
 
-- **Missing source variables**: When a referenced variable doesn't exist
-- **CSS parsing errors**: Invalid format or missing required blocks
-- **Permission issues**: Can't create variables in the target collection
-- **Import failures**: Library access problems
+#### Replace Mode (Recommended)
 
-## 📦 Plugin Structure
+- **Creates**: New variables from CSS
+- **Updates**: Existing variables with new references
+- **Removes**: Orphaned sentiment variables not in CSS
+- **Preserves**: All non-sentiment variables
+
+#### Merge Mode
+
+- **Creates**: New variables from CSS
+- **Updates**: Existing variables with new references
+- **Never removes**: Keeps all existing variables
+
+## 📦 Results Screen
+
+The plugin always shows results with four categories:
+
+- **✅ Created**: New variables created
+- **🔄 Updated**: Existing variables updated
+- **🗑️ Removed**: Variables removed (Replace mode only)
+- **⚠️ Failed**: Missing source variables
+
+All categories display even if empty (showing "0 created", etc.) with collapsible accordions for detailed viewing.
+
+## 🐛 Understanding Failed Imports
+
+Failed imports are common and expected when:
+
+- Your CSS references opacity variants not in your source library (e.g., `color/red/100_90`)
+- The plugin will mark these as "failed" but continue processing
+- Solution: Add missing variants to your source collection or update CSS to use existing variants
+
+### Example
+
+```
+CSS requests: --alpha(var(--color-red-100) / 90%)
+Converts to: color/red/100_90
+If this variant doesn't exist in source → Failed import (expected behavior)
+```
+
+## 📂 Plugin Structure
 
 ```
 theme-variables-mapper/
@@ -129,6 +165,7 @@ theme-variables-mapper/
 ├── code.js           # Main plugin logic (ES5)
 ├── ui.html           # Plugin UI with inline styles/scripts
 ├── check-es5.js      # ES5 compatibility checker
+├── PRD.md            # Product requirements document
 └── README.md         # This file
 ```
 
@@ -140,14 +177,33 @@ This plugin is written in ES5 JavaScript for Figma compatibility:
 - ✅ String concatenation: `"text " + variable`
 - ✅ var declarations: `var name = value`
 - ❌ No arrow functions, template literals, const/let, or destructuring
+- ❌ No console.groupCollapsed() or console.groupEnd()
 
-## 🐛 Troubleshooting
+## 🚦 Console Output
+
+The plugin uses organized console logging:
+
+```
+📚 Loading collections...
+✅ Found 2 library collections
+📄 Parsing CSS content...
+✅ Found 75 theme variables
+🚀 Processing 75 variables...
+📊 === FINAL RESULTS ===
+✅ Created: 0
+🔄 Updated: 6
+🗑️ Removed: 5
+❌ Failed: 20
+```
+
+## ❗ Troubleshooting
 
 ### "Variable not found" errors
 
 - Ensure variable names match exactly (case-sensitive)
 - Check that opacity values use the correct format (`_05`, `_90`)
 - Verify the source collection contains all referenced variables
+- Failed imports are expected for non-existent opacity variants
 
 ### Performance issues
 
@@ -160,22 +216,13 @@ This plugin is written in ES5 JavaScript for Figma compatibility:
 - Verify all three blocks exist: `@theme`, light mode, dark mode
 - Check for syntax errors in variable references
 - Ensure opacity syntax follows the `--alpha()` format
+- Filename must be one of: danger.css, warning.css, success.css, info.css, brand.css, neutral.css
 
-## 🚦 Console Output
+### Results not showing
 
-The plugin uses organized console logging:
-
-```
-📚 Loading collections...
-✅ Found 2 library collections
-📄 Parsing CSS content...
-✅ Found 75 theme variables
-▼ ⚡ Processing 75 variables...    [Click to expand]
-📊 === FINAL RESULTS ===
-✅ Created: 70
-🔄 Updated: 5
-❌ Failed: 0
-```
+- The plugin shows results even with failed imports
+- Check that all result accordions are present in the UI
+- Verify the message handler shows results for any non-empty results
 
 ## 🔮 Future Enhancements
 
@@ -184,6 +231,7 @@ The plugin uses organized console logging:
 - Export functionality for created mappings
 - Undo/redo support
 - Custom naming pattern configuration
+- Configurable console log verbosity
 
 ## 📄 License
 
@@ -200,6 +248,6 @@ For bug reports or feature requests, please document:
 
 ---
 
-**Version**: 1.2.0  
+**Version**: 2.0.0  
 **Compatibility**: Figma Plugin API 1.0.0  
 **Requirements**: ES5 JavaScript environment
