@@ -1412,7 +1412,9 @@
                 // Check if we need JSON upload
                 if (
                   selectedSourceCollection &&
-                  selectedSourceCollection.variableCount >= 500
+                  // if (selectedSourceCollection && selectedSourceCollection.variableCount >= JSON_UPLOAD_THRESHOLD) THIS IS THE THRESHOLD
+
+                  selectedSourceCollection.variableCount >= 600
                 ) {
                   showJsonUploadSection();
                 } else {
