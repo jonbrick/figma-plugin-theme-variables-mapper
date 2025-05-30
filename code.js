@@ -27,7 +27,10 @@ var detectedSentiment = null;
 var selectedMode = "replace";
 var importedVariableIds = [];
 
-// ===== MAIN MESSAGE HANDLER =====
+// DEBUGGING: JSON upload threshold (set to lower number for testing)
+var JSON_UPLOAD_THRESHOLD = 400; // Change this to test JSON upload flow
+
+// ===== NEW MESSAGE TYPE: LOG SOURCE VARIABLES =====
 figma.ui.onmessage = function (msg) {
   console.log("📨 Received message:", msg.type);
 
@@ -38,6 +41,10 @@ figma.ui.onmessage = function (msg) {
 
     case "parse-css":
       parseCSSContent(msg.cssContent, msg.filename);
+      break;
+
+    case "log-source-variables":
+      logSourceVariables(msg.sourceCollectionId);
       break;
 
     case "create-variables":
@@ -73,6 +80,81 @@ figma.ui.onmessage = function (msg) {
       console.error("❌ Unknown message type:", msg.type);
   }
 };
+
+function logSourceVariables(sourceCollectionId) {
+  var sourceCollection = findCollectionById(sourceCollectionId);
+
+  if (!sourceCollection) {
+    console.error("❌ Source collection not found");
+    return;
+  }
+
+  if (sourceCollection.type === "library") {
+    figma.teamLibrary
+      .getVariablesInLibraryCollectionAsync(sourceCollection.id)
+      .then(function (libraryVariables) {
+        console.log(
+          "🗂️ SOURCE VARIABLES:",
+          libraryVariables.map(function (v) {
+            return v;
+          })
+        );
+
+        // Function to find the key by name
+        function findSourceVariableKeyByName(libraryVariables, targetName) {
+          for (var i = 0; i < libraryVariables.length; i++) {
+            if (libraryVariables[i].name === targetName) {
+              return libraryVariables[i].key;
+            }
+          }
+          return null;
+        }
+
+        // TEST
+        var foundKey = findSourceVariableKeyByName(
+          libraryVariables,
+          "color/sky/500_35"
+        );
+        console.log("Key for color/sky/500_35:", foundKey);
+
+        // PUT THE NEW CODE HERE - right after the existing test
+        if (foundKey) {
+          console.log("🔑 Using this key:", foundKey);
+
+          figma.variables
+            .importVariableByKeyAsync(foundKey)
+            .then(function (retrievedVariable) {
+              console.log("📥 Retrieved variable object:", retrievedVariable);
+              console.log("📥 Object properties:", {
+                id: retrievedVariable.id,
+                name: retrievedVariable.name,
+                dataType: typeof retrievedVariable,
+              });
+            })
+            .catch(function (error) {
+              console.error("❌ Retrieval failed:", error);
+            });
+        } else {
+          console.log("❌ No key located");
+        }
+      })
+      .catch(function (error) {
+        console.error("❌ Failed to load source variables:", error);
+      });
+  } else {
+    var localVariables = figma.variables
+      .getLocalVariables()
+      .filter(function (v) {
+        return v.variableCollectionId === sourceCollection.id;
+      });
+    console.log(
+      "🗂️ SOURCE VARIABLES:",
+      localVariables.map(function (v) {
+        return v;
+      })
+    );
+  }
+}
 
 // ===== UTILITY FUNCTIONS =====
 
@@ -490,19 +572,6 @@ function createVariablesFromCSS(
   targetCollectionId
 ) {
   try {
-    console.log("🚀 Starting variable creation process...");
-    console.log("📊 Creation context:", {
-      variables: variablesToCreate.length,
-      sourceCollection: sourceCollectionId,
-      sourceType: sourceCollectionType,
-      targetCollection: targetCollectionId,
-      sentiment: detectedSentiment,
-      mode: selectedMode,
-      hasJsonData: uploadedJsonData
-        ? "Yes (" + Object.keys(uploadedJsonData).length + " vars)"
-        : "No",
-    });
-
     // Find collections
     var sourceCollection = findCollectionById(sourceCollectionId);
     var targetCollection =
@@ -516,24 +585,11 @@ function createVariablesFromCSS(
       throw new Error("Target collection not found in Figma");
     }
 
-    console.log("✅ Collections found:", {
-      source: sourceCollection.displayName || sourceCollection.collectionName,
-      target: targetCollection.name,
-    });
-
     // Setup target collection modes
     var modes = setupCollectionModes(targetCollection);
-    console.log("🎨 Modes configured:", {
-      light: modes.lightModeId,
-      dark: modes.darkModeId,
-    });
 
     // Get existing variables in target collection
     var existingVariables = getExistingVariables(targetCollection.id);
-    console.log(
-      "📊 Existing variables in target:",
-      Object.keys(existingVariables).length
-    );
 
     // Handle sentiment-based cleanup
     var orphanedVariables = [];
@@ -542,13 +598,6 @@ function createVariablesFromCSS(
         existingVariables,
         variablesToCreate,
         detectedSentiment
-      );
-      console.log(
-        "🗑️ Found",
-        orphanedVariables.length,
-        "orphaned",
-        detectedSentiment,
-        "variables to remove"
       );
     }
 
@@ -595,15 +644,10 @@ function setupCollectionModes(collection) {
   var lightModeId = collection.defaultModeId;
   var darkModeId = null;
 
-  console.log("🎨 Setting up modes for collection:", collection.name);
-
   if (collection.modes.length === 1) {
-    // Only one mode, rename to Light and add Dark
-    console.log("📝 Renaming default mode to 'Light' and adding 'Dark'");
     collection.renameMode(lightModeId, "Light");
     darkModeId = collection.addMode("Dark");
   } else {
-    // Multiple modes, find Light and Dark
     for (var i = 0; i < collection.modes.length; i++) {
       var mode = collection.modes[i];
       var modeName = mode.name.toLowerCase();
@@ -614,9 +658,7 @@ function setupCollectionModes(collection) {
       }
     }
 
-    // Add Dark mode if not found
     if (!darkModeId) {
-      console.log("➕ Adding 'Dark' mode");
       darkModeId = collection.addMode("Dark");
     }
   }

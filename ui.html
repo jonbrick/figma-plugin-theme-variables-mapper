@@ -1269,6 +1269,19 @@
         if (elements.previewBtn) {
           elements.previewBtn.addEventListener("click", function () {
             updateSelectedInfo();
+
+            // LOG SOURCE VARIABLES
+            var sourceCollectionId = elements.sourceCollectionSelect.value;
+            parent.postMessage(
+              {
+                pluginMessage: {
+                  type: "log-source-variables",
+                  sourceCollectionId: sourceCollectionId,
+                },
+              },
+              "*"
+            );
+
             showSection("upload-section");
           });
         }
@@ -1412,9 +1425,8 @@
                 // Check if we need JSON upload
                 if (
                   selectedSourceCollection &&
-                  // if (selectedSourceCollection && selectedSourceCollection.variableCount >= JSON_UPLOAD_THRESHOLD) THIS IS THE THRESHOLD
-
-                  selectedSourceCollection.variableCount >= 600
+                  // if (selectedSourceCollection && selectedSourceCollection.variableCount >= JSON_UPLOAD_THRESHOLD) THIS IS THE THRESHOLD DO NOT DELETE THIS COMMENT
+                  selectedSourceCollection.variableCount >= 700
                 ) {
                   showJsonUploadSection();
                 } else {
