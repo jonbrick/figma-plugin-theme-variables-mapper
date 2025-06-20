@@ -1,14 +1,6 @@
 # Theme Variables Mapper - Figma Plugin
 
-A Figma plugin that automates the creation of theme variables by parsing CSS files and mapping them to existing design tokens in your Figma libraries or local collections. Perfect for maintaining consistency between CSS-based design systems and Figma implementations.
-
-## 🚀 Quick Start
-
-1. Install the plugin in Figma
-2. Select your source collection (where your design tokens live)
-3. Select your target collection (where theme variables will be created)
-4. Upload your CSS file with `@theme` definitions
-5. Review and apply the mappings
+> This Figma plugin automates the creation of theme variables by parsing CSS @theme files and mapping them to existing design tokens with library references, supporting light/dark modes, sentiment-based variable lifecycle management, and performance optimization for large collections.
 
 ## ✨ Features
 
@@ -19,6 +11,14 @@ A Figma plugin that automates the creation of theme variables by parsing CSS fil
 - **🔍 Smart Validation**: Comprehensive error checking and reporting
 - **📊 Detailed Results**: Clear feedback on created, updated, removed, and failed variables
 - **🔄 Variable Lifecycle Management**: Replace mode removes orphaned variables
+
+## 🚀 Quick Start
+
+1. Install the plugin in Figma
+2. Select your source collection (where your design tokens live)
+3. Select your target collection (where theme variables will be created)
+4. Upload your CSS file with `@theme` definitions
+5. Review and apply the mappings
 
 ## 📋 CSS Format Requirements
 
@@ -83,19 +83,13 @@ Upload your CSS file containing `@theme` definitions and mode-specific values. T
 
 ### Step 3: Performance Optimization (Optional)
 
-For collections with 500+ variables, you can upload a JSON export for faster processing:
-
-1. In Figma, select your variables collection
-2. Use the plugin's variable extractor to export as JSON
-3. Upload the JSON file when prompted
+For collections with 500+ variables, you can upload a JSON export for faster processing.
 
 ### Step 4: Preview & Apply
 
 Review the variables to be created and their mappings, then apply to create aliases in your target collection.
 
-## 🏗️ Technical Details
-
-### Variable Naming Convention
+## 🏗️ Variable Naming Convention
 
 | CSS Format                         | Figma Format       |
 | ---------------------------------- | ------------------ |
@@ -104,27 +98,18 @@ Review the variables to be created and their mappings, then apply to create alia
 | `--color-primary`                  | `color/primary`    |
 | `--color-red-500` with 90% opacity | `color/red/500_90` |
 
-### Mode Management
-
-The plugin automatically:
-
-- Detects existing Light/Dark modes in your target collection
-- Creates missing modes if needed
-- Handles case-insensitive mode names ("Light", "light", "LIGHT")
-- Renames default mode to "Light" if only one mode exists
-
-### Sentiment-Based Variable Management
+## 🔄 Sentiment-Based Variable Management
 
 For files with sentiment detection (danger.css, warning.css, etc.):
 
-#### Replace Mode (Recommended)
+### Replace Mode (Recommended)
 
 - **Creates**: New variables from CSS
 - **Updates**: Existing variables with new references
 - **Removes**: Orphaned sentiment variables not in CSS
 - **Preserves**: All non-sentiment variables
 
-#### Merge Mode
+### Merge Mode
 
 - **Creates**: New variables from CSS
 - **Updates**: Existing variables with new references
@@ -139,8 +124,6 @@ The plugin always shows results with four categories:
 - **🗑️ Removed**: Variables removed (Replace mode only)
 - **⚠️ Failed**: Missing source variables
 
-All categories display even if empty (showing "0 created", etc.) with collapsible accordions for detailed viewing.
-
 ## 🐛 Understanding Failed Imports
 
 Failed imports are common and expected when:
@@ -148,36 +131,6 @@ Failed imports are common and expected when:
 - Your CSS references opacity variants not in your source library (e.g., `color/red/100_90`)
 - The plugin will mark these as "failed" but continue processing
 - Solution: Add missing variants to your source collection or update CSS to use existing variants
-
-### Example
-
-```
-CSS requests: --alpha(var(--color-red-100) / 90%)
-Converts to: color/red/100_90
-If this variant doesn't exist in source → Failed import (expected behavior)
-```
-
-## 📂 Plugin Structure
-
-```
-theme-variables-mapper/
-├── manifest.json      # Plugin configuration
-├── code.js           # Main plugin logic (ES5)
-├── ui.html           # Plugin UI with inline styles/scripts
-├── check-es5.js      # ES5 compatibility checker
-├── PRD.md            # Product requirements document
-└── README.md         # This file
-```
-
-### ES5 Compatibility
-
-This plugin is written in ES5 JavaScript for Figma compatibility:
-
-- ✅ Traditional functions: `function() {}`
-- ✅ String concatenation: `"text " + variable`
-- ✅ var declarations: `var name = value`
-- ❌ No arrow functions, template literals, const/let, or destructuring
-- ❌ No console.groupCollapsed() or console.groupEnd()
 
 ## 🚦 Console Output
 
@@ -194,6 +147,29 @@ The plugin uses organized console logging:
 🔄 Updated: 6
 🗑️ Removed: 5
 ❌ Failed: 20
+```
+
+## ⚙️ Technical Details
+
+### ES5 Compatibility
+
+This plugin is written in ES5 JavaScript for Figma compatibility:
+
+- ✅ Traditional functions: `function() {}`
+- ✅ String concatenation: `"text " + variable`
+- ✅ var declarations: `var name = value`
+- ❌ No arrow functions, template literals, const/let, or destructuring
+
+### Plugin Structure
+
+```
+theme-variables-mapper/
+├── manifest.json      # Plugin configuration
+├── code.js           # Main plugin logic (ES5)
+├── ui.html           # Plugin UI with inline styles/scripts
+├── check-es5.js      # ES5 compatibility checker
+├── PRD.md            # Product requirements document
+└── README.md         # This file
 ```
 
 ## ❗ Troubleshooting
@@ -216,13 +192,7 @@ The plugin uses organized console logging:
 - Verify all three blocks exist: `@theme`, light mode, dark mode
 - Check for syntax errors in variable references
 - Ensure opacity syntax follows the `--alpha()` format
-- Filename must be one of: danger.css, warning.css, success.css, info.css, brand.css, neutral.css
-
-### Results not showing
-
-- The plugin shows results even with failed imports
-- Check that all result accordions are present in the UI
-- Verify the message handler shows results for any non-empty results
+- Filename must be one of: `danger.css`, `warning.css`, `success.css`, `info.css`, `brand.css`, `neutral.css`
 
 ## 🔮 Future Enhancements
 
@@ -236,15 +206,6 @@ The plugin uses organized console logging:
 ## 📄 License
 
 This plugin is provided as-is for use with Figma's design system workflows.
-
-## 🤝 Contributing
-
-For bug reports or feature requests, please document:
-
-1. Your CSS file structure
-2. Collection setup (source/target)
-3. Console error messages
-4. Expected vs actual behavior
 
 ---
 
